@@ -2,6 +2,8 @@
 #include <AS5600.h>
 #include <Dynamixel2Arduino.h>
 #include <Preferences.h>
+#include "fast_slave.h"
+
 
 /*---------------------- ESP32 defines and variables -------------------*/
 #define I2C_SDA 18
@@ -171,7 +173,7 @@ void TaskWorker(void *pvParameters) {
     for (;;) {
         magnitude = ams5600.getMagnitude();
         angleRaw = ams5600.getRawAngle();
-        angle = rawToDeg(rawAngle);
+        angle = rawToDeg(angleRaw);
         magnet = ams5600.detectMagnet();
         strength = ams5600.getMagnetStrength();
         agc = ams5600.getAgc();
