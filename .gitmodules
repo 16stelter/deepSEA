@@ -1,0 +1,3 @@
+[submodule "bitbots_lowlevel"]
+	path = bitbots_lowlevel
+	url = git@github.com:16stelter/bitbots_lowlevel.git
