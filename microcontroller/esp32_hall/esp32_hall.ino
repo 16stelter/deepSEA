@@ -182,6 +182,6 @@ void TaskWorker(void *pvParameters) {
 
 /*---------------------- Hall Sensor ---------------------*/
 float rawToDeg(word rawAngle) {
-    // sensor returns 0-4095, so 1 equals 0.088 degrees. Also, zero should be in the middle, since dxl has positive and negative angle.
-    return (rawAngle - 2048) * 0.087890625;
+    // sensor returns 0-4095, so 1 equals 0.088 degrees. Dynamixel zero is actually 2048 (or 180 deg).
+    return rawAngle * 0.087890625;
 }
