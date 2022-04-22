@@ -15,28 +15,21 @@
 #define DXL_PROTOCOL_VER_2_0 2.0
 #define DXL_MODEL_NUM 0xbaff
 #define DEFAULT_ID 42
-#define DEFAULT_BAUD 6 //4mbaud
+#define DEFAULT_BAUD 6 //4mbaud. TODO: Might need to reduce to 4 = 2mbaud, because the flashing tool cant handle more.
 
 uart_t* uart;
 DYNAMIXEL::FastSlave dxl(DXL_MODEL_NUM, DXL_PROTOCOL_VER_2_0);
 
 #define ADDR_CONTROL_ITEM_BAUD 8
 
-#define ADDR_CONTROL_ITEM_MAGNITUDE 10
-#define ADDR_CONTROL_ITEM_ANGLE 11
-#define ADDR_CONTROL_ITEM_ANGLE_RAW 12
+#define ADDR_CONTROL_ITEM_MAGNITUDE 30 //2
+#define ADDR_CONTROL_ITEM_ANGLE_RAW 32 //2
+#define ADDR_CONTROL_ITEM_ANGLE 34 //4
 
-#define ADDR_CONTROL_ITEM_DETECT_MAGNET 20
-#define ADDR_CONTROL_ITEM_MAGNET_STR 21
-#define ADDR_CONTROL_ITEM_AGC 22
-
-#define ADDR_CONTROL_ITEM_MODE 30
-#define ADDR_CONTROL_ITEM_MAX_ANGLE 31
-#define ADDR_CONTROL_ITEM_START_POS 32
-#define ADDR_CONTROL_ITEM_END_POS 33
-#define ADDR_CONTROL_ITEM_CONF 34
-#define ADDR_CONTROL_ITEM_BURN 35
-//1x: sensor output, 2x: debug output, 3x: inputs
+#define ADDR_CONTROL_ITEM_DETECT_MAGNET 40 //4
+#define ADDR_CONTROL_ITEM_MAGNET_STR 44 //4
+#define ADDR_CONTROL_ITEM_AGC 48 //4
+//3x: sensor output, 4x: debug output, 6x: inputs
 
 /*---------------------- DXL ---------------------*/
 
