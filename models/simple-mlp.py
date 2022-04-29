@@ -1,21 +1,21 @@
+import torch.nn as nn
+import torch.nn.functional as F
 import numpy as np
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Activation
+from torch import optim
 
 
-class SimpleMlp:
+class SimpleMlp(nn.Module):
     def __init__(self):
-        self.model = Sequential([
-            Dense(32, input_shape=16, activation='softsign'),
-            Dense(32, activation='softsign'),
-            Dense(32, activation='softsign'),
-            Dense(1, activation='sigmoid')
-        ])
-        self.model.compile(optimizer='adam',
-                           loss='sparse_categorical_crossentropy',
-                           metrics=['accuracy'])
+        super().__init__()
+        self.fc1 = nn.Linear(16, 32)
+        self.fc2 = nn.Linear(32, 32)
+        self.fc3 = nn.Linear(32, 32)
+        self.out = nn.Linear(32, 1)
 
-    def train(self, x, y):
-        self.model.fit(x, y, epochs=10,
-                       batch_size=100,
-                       validation_split=0.2)
+    def forward(self, x):
+        x = F.softsign(self.fc1(x))
+        x = F.softsign(self.fc2(x))
+        x = F.softsign(self.fc3(x))
+        y = F.sigmoid(self.out(x))
+
+        return y
