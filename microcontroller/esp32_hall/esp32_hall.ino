@@ -13,23 +13,23 @@
 
 #define DXL_DIR_PIN 22
 #define DXL_PROTOCOL_VER_2_0 2.0
-#define DXL_MODEL_NUM 0xbaff
+#define DXL_MODEL_NUM 0xabcd
 #define DEFAULT_ID 42
-#define DEFAULT_BAUD 6 //4mbaud. TODO: Might need to reduce to 4 = 2mbaud, because the flashing tool cant handle more.
+#define DEFAULT_BAUD 4 //4mbaud. TODO: Might need to reduce to 4 = 2mbaud, because the flashing tool cant handle more.
 
 uart_t* uart;
 DYNAMIXEL::FastSlave dxl(DXL_MODEL_NUM, DXL_PROTOCOL_VER_2_0);
 
 #define ADDR_CONTROL_ITEM_BAUD 8
 
-#define ADDR_CONTROL_ITEM_MAGNITUDE 30 //2
-#define ADDR_CONTROL_ITEM_ANGLE_RAW 32 //2
-#define ADDR_CONTROL_ITEM_ANGLE 34 //4
+#define ADDR_CONTROL_ITEM_MAGNITUDE 30 //4
+#define ADDR_CONTROL_ITEM_ANGLE_RAW 34 //4
+#define ADDR_CONTROL_ITEM_ANGLE 38 //4
 
-#define ADDR_CONTROL_ITEM_DETECT_MAGNET 40 //4
-#define ADDR_CONTROL_ITEM_MAGNET_STR 44 //4
-#define ADDR_CONTROL_ITEM_AGC 48 //4
-//3x: sensor output, 4x: debug output, 6x: inputs
+#define ADDR_CONTROL_ITEM_DETECT_MAGNET 50 //4
+#define ADDR_CONTROL_ITEM_MAGNET_STR 54 //4
+#define ADDR_CONTROL_ITEM_AGC 58 //4
+//3x: sensor output, 5x: debug output, 6x: inputs
 
 /*---------------------- DXL ---------------------*/
 
@@ -55,9 +55,9 @@ uint32_t dxl_to_real_baud(uint8_t baud)
 }
 
 /*--------------- Hall Sensor Variables ------------*/
-word magnitude;
-float angle;
-word angleRaw;
+uint32_t magnitude;
+uint32_t angle;
+uint32_t angleRaw;
 int magnet;
 int strength;
 int agc;
@@ -164,17 +164,11 @@ void TaskWorker(void *pvParameters) {
     Wire.begin(I2C_SDA, I2C_SCL);
 
     for (;;) {
-        magnitude = ams5600.getMagnitude();
-        angleRaw = ams5600.getRawAngle();
-        angle = rawToDeg(angleRaw);
+        magnitude = (uint32_t)ams5600.getMagnitude() & 0b111111111111;
+        angleRaw = (uint32_t)ams5600.getRawAngle() & 0b111111111111;
+        angle = (uint32_t)ams5600.getScaledAngle() & 0b111111111111;
         magnet = ams5600.detectMagnet();
         strength = ams5600.getMagnetStrength();
         agc = ams5600.getAgc();
     }
-}
-
-/*---------------------- Hall Sensor ---------------------*/
-float rawToDeg(word rawAngle) {
-    // sensor returns 0-4095, so 1 equals 0.088 degrees. Dynamixel zero is actually 2048 (or 180 deg).
-    return rawAngle * 0.087890625;
 }
