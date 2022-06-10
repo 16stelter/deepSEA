@@ -1,3 +1,5 @@
+import glob
+
 from setuptools import setup
 from setuptools import find_packages
 
@@ -10,6 +12,8 @@ setup(
     packages=find_packages(exclude=['test']),
     data_files=[
         ('share/' + package_name, ['package.xml']),
+        ('share/' + package_name + '/config',
+         glob.glob('config/*')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,

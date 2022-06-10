@@ -2,13 +2,15 @@ import time
 import rclpy
 from rclpy.node import Node
 from bitbots_msgs.msg import FloatStamped, JointCommand
+import yaml
+import ament_index_python
 
 
 class Calibration:
     def __init__(self):
         rclpy.init(args=None)
         self.node = Node("calibration_node")
-        self.cfgpath = '../config/sensors.yaml'
+        self.cfgpath = ament_index_python.get_package_share_directory("data_reader") + "/config/sensors.yaml"
 
         self.loffset = 0
         self.roffset = 0
@@ -43,12 +45,23 @@ class Calibration:
         msg.max_currents = [-1.0] * 20
         self.mgpub.publish(msg)
         rclpy.spin_once(self.node)
-        self.node.get_logger().info("Waiting 3 seconds...")
-        time.sleep(3)
-        rclpy.spin_once(self.node)
+        self.node.get_logger().info("Press key when zero pose is reached.")
+        # This is due to a bug where some motors randomly move slow
+        input()
         self.node.get_logger().info("Left offset is " + str(self.loffset))
         self.node.get_logger().info("Right offset is " + str(self.roffset))
         self.node.get_logger().info("Writing to config file...")
+        output = {
+            'data_reader': {
+                'ros__parameters': {
+                    'l_offset': self.loffset,
+                    'r_offset': self.roffset
+                }
+            }
+        }
+        with open(self.cfgpath,'w') as f:
+            yaml.dump(output, f)
+
         self.node.get_logger().info("Sensors calibrated successfully!")
 
 
