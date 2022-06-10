@@ -15,7 +15,7 @@
 #define DXL_PROTOCOL_VER_2_0 2.0
 #define DXL_MODEL_NUM 0xabcd
 #define DEFAULT_ID 42
-#define DEFAULT_BAUD 4 //4mbaud. TODO: Might need to reduce to 4 = 2mbaud, because the flashing tool cant handle more.
+#define DEFAULT_BAUD 4 //2mbaud. TODO: Might need to reduce to 4 = 2mbaud, because the flashing tool cant handle more.
 
 uart_t* uart;
 DYNAMIXEL::FastSlave dxl(DXL_MODEL_NUM, DXL_PROTOCOL_VER_2_0);
