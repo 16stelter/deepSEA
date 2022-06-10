@@ -12,6 +12,8 @@ setup(
     packages=find_packages(exclude=['test']),
     data_files=[
         ('share/' + package_name, ['package.xml']),
+        ('share/' + package_name + '/launch',
+         glob.glob('launch/*.py')),
         ('share/' + package_name + '/config',
          glob.glob('config/*')),
     ],

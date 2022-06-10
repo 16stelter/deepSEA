@@ -20,16 +20,17 @@ class Calibration:
         self.mgpub = self.node.create_publisher(JointCommand, "DynamixelController/command", 1)
 
     def l_cb(self, msg):
-        self.loffset = msg.value
+        self.loffset = 2048 - msg.value  # Dynamixel 2048 = 0 degrees
         return
 
     def r_cb(self, msg):
-        self.roffset = msg.value
+        self.roffset = 2048 - msg.value # Dynamixel 2048 = 0 degrees
         return
 
     def main(self):
         self.node.get_logger().info("Hall Sensor Calibration Tool \n \n")
-        self.node.get_logger().info("Please make sure the robot is not touching the ground, then press any key to continue.\n")
+        self.node.get_logger().info("Please make sure the robot is not touching the ground, "
+                                    "then press any key to continue.\n")
         input()
         self.node.get_logger().info("Config path is " + self.cfgpath)
         self.node.get_logger().info("Setting all motors to zero.")
@@ -45,14 +46,14 @@ class Calibration:
         msg.max_currents = [-1.0] * 20
         self.mgpub.publish(msg)
         rclpy.spin_once(self.node)
-        self.node.get_logger().info("Press key when zero pose is reached.")
-        # This is due to a bug where some motors randomly move slow
-        input()
+        self.node.get_logger().info("Waiting 3 seconds...")
+        time.sleep(3)
+        rclpy.spin_once(self.node)
         self.node.get_logger().info("Left offset is " + str(self.loffset))
         self.node.get_logger().info("Right offset is " + str(self.roffset))
         self.node.get_logger().info("Writing to config file...")
         output = {
-            'data_reader': {
+            'reader': {
                 'ros__parameters': {
                     'l_offset': self.loffset,
                     'r_offset': self.roffset
