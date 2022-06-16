@@ -1,34 +1,27 @@
 #include <Wire.h>
-#include <AS5600.h>
 #include <Dynamixel2Arduino.h>
 #include <Preferences.h>
 #include "fast_slave.h"
 
-
-/*---------------------- ESP32 defines and variables -------------------*/
-#define I2C_SDA 18
-#define I2C_SCL 19
 
 /*---------------------- DXL defines and variables ---------------------*/
 
 #define DXL_DIR_PIN 22
 #define DXL_PROTOCOL_VER_2_0 2.0
 #define DXL_MODEL_NUM 0xabcd
-#define DEFAULT_ID 42
-#define DEFAULT_BAUD 4 //2mbaud. TODO: Might need to reduce to 4 = 2mbaud, because the flashing tool cant handle more.
+#define DEFAULT_ID 82
+#define DEFAULT_BAUD 6 //2mbaud. TODO: Might need to reduce to 4 = 2mbaud, because the flashing tool cant handle more.
+
+#define I2C_SDA 18
+#define I2C_SCL 19
 
 uart_t* uart;
 DYNAMIXEL::FastSlave dxl(DXL_MODEL_NUM, DXL_PROTOCOL_VER_2_0);
 
 #define ADDR_CONTROL_ITEM_BAUD 8
 
-#define ADDR_CONTROL_ITEM_MAGNITUDE 30 //4
 #define ADDR_CONTROL_ITEM_ANGLE_RAW 34 //4
-#define ADDR_CONTROL_ITEM_ANGLE 38 //4
 
-#define ADDR_CONTROL_ITEM_DETECT_MAGNET 50 //4
-#define ADDR_CONTROL_ITEM_MAGNET_STR 54 //4
-#define ADDR_CONTROL_ITEM_AGC 58 //4
 //3x: sensor output, 5x: debug output, 6x: inputs
 
 /*---------------------- DXL ---------------------*/
@@ -55,12 +48,7 @@ uint32_t dxl_to_real_baud(uint8_t baud)
 }
 
 /*--------------- Hall Sensor Variables ------------*/
-uint32_t magnitude;
-uint32_t angle;
 uint32_t angleRaw;
-int magnet;
-int strength;
-int agc;
 
 /*---------------------- Setup ---------------------*/
 
@@ -72,12 +60,10 @@ TaskHandle_t th_dxl,th_worker;
 
 Preferences dxl_prefs;
 
-// define sensor
-AMS_5600 ams5600;
-
 void setup() {
     disableCore0WDT(); // required since we dont want FreeRTOS to slow down our reading if the Wachdogtimer (WTD) fires
     disableCore1WDT();
+    //Serial.begin(2000000); debug only
     xTaskCreatePinnedToCore(
             TaskDXL
             ,  "TaskDXL"   // A name just for humans
@@ -121,12 +107,7 @@ void TaskDXL(void *pvParameters) {
 
     dxl.addControlItem(ADDR_CONTROL_ITEM_BAUD, baud);
 
-    dxl.addControlItem(ADDR_CONTROL_ITEM_MAGNITUDE, magnitude);
-    dxl.addControlItem(ADDR_CONTROL_ITEM_ANGLE, angle);
     dxl.addControlItem(ADDR_CONTROL_ITEM_ANGLE_RAW, angleRaw);
-    dxl.addControlItem(ADDR_CONTROL_ITEM_DETECT_MAGNET, magnet);
-    dxl.addControlItem(ADDR_CONTROL_ITEM_MAGNET_STR, strength);
-    dxl.addControlItem(ADDR_CONTROL_ITEM_AGC, agc);
 
     dxl.setWriteCallbackFunc(write_callback_func);
 
@@ -161,14 +142,14 @@ void write_callback_func(uint16_t item_addr, uint8_t &dxl_err_code, void* arg) {
 }
 
 void TaskWorker(void *pvParameters) {
-    Wire.begin(I2C_SDA, I2C_SCL);
-
+  pinMode(17, INPUT);
+  //Wire.begin(I2C_SDA, I2C_SCL);
+  //Wire.beginTransmission(0x36);
+  //Wire.write(0x08);
+  //Wire.write(0b10100000); //set: 460 Hz, PWM mode, no hysteresis, normal power mode
+  //Wire.endTransmission();
     for (;;) {
-        magnitude = (uint32_t)ams5600.getMagnitude() & 0b111111111111;
-        angleRaw = (uint32_t)ams5600.getRawAngle() & 0b111111111111;
-        angle = (uint32_t)ams5600.getScaledAngle() & 0b111111111111;
-        magnet = ams5600.detectMagnet();
-        strength = ams5600.getMagnetStrength();
-        agc = ams5600.getAgc();
+        angleRaw = pulseIn(17, HIGH); //convert angle value from unsigned long to uint32
+        //Serial.println(angleRaw); Debug only
     }
 }
