@@ -9,7 +9,7 @@
 #define DXL_DIR_PIN 22
 #define DXL_PROTOCOL_VER_2_0 2.0
 #define DXL_MODEL_NUM 0xabcd
-#define DEFAULT_ID 82
+#define DEFAULT_ID 83
 #define DEFAULT_BAUD 6 //2mbaud. TODO: Might need to reduce to 4 = 2mbaud, because the flashing tool cant handle more.
 
 #define I2C_SDA 18
@@ -61,9 +61,14 @@ TaskHandle_t th_dxl,th_worker;
 Preferences dxl_prefs;
 
 void setup() {
+    Wire.begin(I2C_SDA, I2C_SCL);
+    Wire.beginTransmission(0x36);
+    Wire.write(0x08);
+    Wire.write(0b10100000); //set: 460 Hz, PWM mode, no hysteresis, normal power mode
+    Wire.endTransmission();
     disableCore0WDT(); // required since we dont want FreeRTOS to slow down our reading if the Wachdogtimer (WTD) fires
     disableCore1WDT();
-    //Serial.begin(2000000); debug only
+    //Serial.begin(2000000); //debug only
     xTaskCreatePinnedToCore(
             TaskDXL
             ,  "TaskDXL"   // A name just for humans
@@ -143,13 +148,8 @@ void write_callback_func(uint16_t item_addr, uint8_t &dxl_err_code, void* arg) {
 
 void TaskWorker(void *pvParameters) {
   pinMode(17, INPUT);
-  //Wire.begin(I2C_SDA, I2C_SCL);
-  //Wire.beginTransmission(0x36);
-  //Wire.write(0x08);
-  //Wire.write(0b10100000); //set: 460 Hz, PWM mode, no hysteresis, normal power mode
-  //Wire.endTransmission();
     for (;;) {
-        angleRaw = pulseIn(17, HIGH); //convert angle value from unsigned long to uint32
-        //Serial.println(angleRaw); Debug only
+        angleRaw = pulseIn(17, HIGH);
+        //Serial.println(angleRaw); //debug only
     }
 }
