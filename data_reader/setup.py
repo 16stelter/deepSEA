@@ -14,8 +14,7 @@ setup(
         ('share/' + package_name, ['package.xml']),
         ('share/' + package_name + '/launch',
          glob.glob('launch/*.py')),
-        ('share/' + package_name + '/config',
-         glob.glob('config/*')),
+
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -24,7 +23,6 @@ setup(
     description='TODO: Package description',
     license='TODO: License declaration',
     tests_require=['pytest'],
-    scripts=['scripts/calibration.py'],
     entry_points={
         'console_scripts': [
             'reader = data_reader.reader:main'

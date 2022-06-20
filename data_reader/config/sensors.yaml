@@ -1,4 +1,0 @@
-reader:
-  ros__parameters:
-    l_offset: 0.0
-    r_offset: 0.0
