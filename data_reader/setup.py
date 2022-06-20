@@ -14,6 +14,8 @@ setup(
         ('share/' + package_name, ['package.xml']),
         ('share/' + package_name + '/launch',
          glob.glob('launch/*.py')),
+        ('share/' + package_name + '/scripts',
+         glob.glob('scripts/*.py')),
 
     ],
     install_requires=['setuptools'],
@@ -22,6 +24,7 @@ setup(
     maintainer_email='6stelter@informatik.uni-hamburg.de',
     description='TODO: Package description',
     license='TODO: License declaration',
+    scripts=['scripts/record.py'],
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [

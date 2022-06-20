@@ -26,7 +26,7 @@ class Reader(Node):
                         'imu', 'l_pressure', 'r_pressure', 'command']
         self.df = pd.DataFrame(columns=data_columns)
 
-        self.hist = [[0 for i in range(10)] for i in range(10)]
+        self.hist = [0 for i in range(10)]
         self.command = None
 
         self.imu_sub = Subscriber(self, Imu, "/imu/data", qos_profile=1)
@@ -50,13 +50,13 @@ class Reader(Node):
     def sync_cb(self, hall_r_msg, hall_l_msg, joint_msg, imu_msg, pressure_l_msg, pressure_r_msg):
         for i in range(len(joint_msg.name)):
             if joint_msg.name[i] == 'LKnee':
-                self.hist[0].append(joint_msg.position[i])
-                self.hist[2].append(joint_msg.velocity[i])
-                self.hist[4].append(joint_msg.effort[i])
+                self.hist[0] = joint_msg.position[i]
+                self.hist[2] = joint_msg.velocity[i]
+                self.hist[4] = joint_msg.effort[i]
             elif joint_msg.name[i] == 'RKnee':
-                self.hist[5].append(joint_msg.position[i])
-                self.hist[7].append(joint_msg.velocity[i])
-                self.hist[9].append(joint_msg.effort[i])
+                self.hist[5] = joint_msg.position[i]
+                self.hist[7] = joint_msg.velocity[i]
+                self.hist[9] = joint_msg.effort[i]
 
         # hall_l = (hall_l_msg.value + self.l_offset)
         # if hall_l < 0:
@@ -76,11 +76,9 @@ class Reader(Node):
         # else:
         #     hall_r = ((hall_r - 2048.0) / 2048.0) * math.pi
 
-        self.hist[1].append(hall_l_msg.value)
-        self.hist[6].append(hall_r_msg.value)
-        for i in self.hist:
-            if len(i) > 10:
-                i.pop(0)
+        self.hist[1] = hall_l_msg.value
+        self.hist[6] = hall_r_msg.value
+
         data = copy.deepcopy(self.hist)
         data.append(imu_msg)
         data.append(pressure_l_msg)
