@@ -9,6 +9,10 @@ from tqdm import tqdm
 from models import simplemlp, siam
 from dataset import SeaDataset
 
+import wandb
+
+wandb.init(project="deepsea")
+
 learning_rate = 0.001
 batch_size = 32
 epochs = 100
@@ -69,6 +73,10 @@ best_val_epoch = -1
 criterion = torch.nn.MSELoss()
 
 ds = SeaDataset("data/d3.csv", hall=use_hall, vel=use_vel, imu=use_imu, fp=use_fp)
+
+wandb.config = {"epochs": epochs, "batch_size": batch_size, "learning_rate": learning_rate, "use_hall": use_hall,
+              "use_vel": use_vel, "use_imu": use_imu, "use_fp": use_fp, "model": model.__class__.__name__}
+
 train_size = int(0.8 * len(ds))
 test_size = len(ds) - train_size
 train_dataset, test_dataset = torch.utils.data.random_split(ds, [train_size, test_size])
@@ -84,6 +92,7 @@ for e in range(epochs):
         loss.backward()
         opt.step()
         if i % 100 == 0:
+            wandb.log({"train_loss": loss.item()})
             print("Epoch: {}, batch: {}, loss: {}".format(e, i, loss.item()))
     model.eval()
     val_loss = 0
@@ -91,5 +100,7 @@ for e in range(epochs):
         pred = model.forward(x)
         val_loss += criterion(pred, y).item()
     val_loss = val_loss / len(test_loader)
+    wandb.log({"val_loss": val_loss})
     print("Validation. Epoch: {}, val_loss: {}".format(e, val_loss))
+    wandb.watch(model)
 
