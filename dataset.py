@@ -20,7 +20,7 @@ class SeaDataset(Dataset):
             offset = 0
         else:  # right
             offset = 5
-        idx = idx//2
+        idx = idx//2-1
 
         x = self.data.iloc[idx+1, 2+offset]  # target position
         x = np.append(x, self.data.iloc[idx, 1+offset])  # current motor position

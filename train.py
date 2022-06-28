@@ -4,7 +4,7 @@ import getopt, sys
 
 from torch import optim
 from torch.utils.data import DataLoader
-from tqdm.asyncio import tqdm
+from tqdm import tqdm
 
 from models import simplemlp, siam
 from dataset import SeaDataset
@@ -77,7 +77,7 @@ test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
 
 for e in range(epochs):
     model.train()
-    for i, (x, y) in enumerate(tqdm(train_dataset)):
+    for i, (x, y) in enumerate(tqdm(train_loader)):
         opt.zero_grad()
         y_pred = model(x)
         loss = criterion(y_pred, y)
@@ -87,4 +87,9 @@ for e in range(epochs):
             print("Epoch: {}, batch: {}, loss: {}".format(e, i, loss.item()))
     model.eval()
     val_loss = 0
+    for step, (x, y) in enumerate(tqdm(test_loader)):
+        pred = model.forward(x)
+        val_loss += criterion(pred, y).item()
+    val_loss = val_loss / len(test_loader)
+    print("Validation. Epoch: {}, val_loss: {}".format(e, val_loss))
 
