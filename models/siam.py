@@ -6,14 +6,14 @@ from torch import optim
 
 
 class SiamNN(nn.Module):
-    def __init__(self, s_inputs):
+    def __init__(self, input_shape):
         super().__init__()
-        self.s_dense1 = nn.Linear(s_inputs, 64)
+        self.s_dense1 = nn.Linear(input_shape, 64)
         self.s_dense2 = nn.Linear(64, 64)
         self.s_dense3 = nn.Linear(64, 64)
         self.s_out = nn.Linear(64, 64)
 
-        self.pred_xt1 = nn.Linear(64, s_inputs)
+        self.pred_xt1 = nn.Linear(64, input_shape)
         self.pred_ut = nn.Linear(64, 1)
 
     def forward(self, xt, xt1, ut):

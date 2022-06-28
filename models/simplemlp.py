@@ -4,9 +4,9 @@ import numpy as np
 from torch import optim
 
 class SimpleMlp(nn.Module):
-    def __init__(self):
+    def __init__(self, input_shape):
         super().__init__()
-        self.fc1 = nn.Linear(16, 32)
+        self.fc1 = nn.Linear(input_shape, 32)
         self.fc2 = nn.Linear(32, 32)
         self.fc3 = nn.Linear(32, 32)
         self.out = nn.Linear(32, 1)

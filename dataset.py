@@ -5,8 +5,7 @@ import numpy as np
 import ast
 
 class SeaDataset(Dataset):
-    def __init__(self, filename, hall=True, vel=False, imu=False, fp=False, use_poserr=False):
-        ### Setting a history value forces poserr to be true!!!
+    def __init__(self, filename, hall=True, vel=True, imu=True, fp=True, use_poserr=False):
         self.data = pd.read_csv(filename)
         self.hall = hall
         self.vel = vel
@@ -40,6 +39,9 @@ class SeaDataset(Dataset):
             x = np.concatenate((x, np.asarray(ast.literal_eval(self.data.iloc[idx, 13]))), axis=0)  # right foot
         y = self.data.iloc[idx, 5+offset]
         return x, y
+
+    def __len__(self):
+        return len(self.data) * 2
 
 
 if __name__ == "__main__":
