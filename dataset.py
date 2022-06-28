@@ -5,13 +5,13 @@ import numpy as np
 import ast
 
 class SeaDataset(Dataset):
-    def __init__(self, filename, vel=True, imu=False, fp=False, hist=2, use_poserr=True):
+    def __init__(self, filename, hall=True, vel=False, imu=False, fp=False, use_poserr=False):
         ### Setting a history value forces poserr to be true!!!
         self.data = pd.read_csv(filename)
+        self.hall = hall
         self.vel = vel
         self.imu = imu
         self.fp = fp
-        self.hist = hist
         self.use_poserr = use_poserr
 
     def __getitem__(self, idx):
@@ -22,37 +22,29 @@ class SeaDataset(Dataset):
             offset = 5
         idx = idx//2
 
-        deletes = [4]
-        x = self.data.iloc[idx, 1+offset:6+offset].values
-        if not self.vel:
-            deletes.append(2)
-            deletes.append(3)
+        x = self.data.iloc[idx+1, 2+offset] # target position
+        x = np.append(x, self.data.iloc[idx, 1+offset])  # current motor position
+        if self.hall:
+            x = np.append(x, self.data.iloc[idx, 2+offset])  # hall position current
         if self.use_poserr:
-            x[0] = x[0] - x[1]
-            deletes.append(1)
-        x = np.delete(x, deletes, axis=0)
-        if not self.hist == 0:
-            if idx >= self.hist:
-                if self.vel:
-                    for i in range(self.hist):
-                        x = np.insert(x, 1, self.data.iloc[idx-1-i, 3+offset], axis=0)
-                        x = np.insert(x, 2, self.data.iloc[idx-1-i, 4+offset], axis=0)
-                for i in range(self.hist):
-                    x = np.insert(x, 0, (self.data.iloc[idx-1-i, 1+offset] - self.data.iloc[idx-1-i, 2+offset]), axis=0)
-
-
+            if not self.hall:
+                x = np.append(x, self.data.iloc[idx, 2+offset])
+            x[0] = x[0] - x[2]
+            x = np.delete(x, 2, axis=0)
+        if self.vel:
+            x = np.append(x, self.data.iloc[idx, 3+offset:5+offset].values)  # velocity
         if self.imu:
-            x = np.concatenate((x, np.asarray(ast.literal_eval(self.data.iloc[idx, 11]))), axis=0)
+            x = np.concatenate((x, np.asarray(ast.literal_eval(self.data.iloc[idx, 11]))), axis=0)  # imu
         if self.fp:
-            x = np.concatenate((x, np.asarray(ast.literal_eval(self.data.iloc[idx, 12]))), axis=0)
-            x = np.concatenate((x, np.asarray(ast.literal_eval(self.data.iloc[idx, 13]))), axis=0)
+            x = np.concatenate((x, np.asarray(ast.literal_eval(self.data.iloc[idx, 12]))), axis=0)  # left foot
+            x = np.concatenate((x, np.asarray(ast.literal_eval(self.data.iloc[idx, 13]))), axis=0)  # right foot
         y = self.data.iloc[idx, 5+offset]
         return x, y
 
 
 if __name__ == "__main__":
     dataset = SeaDataset("data/d3.csv")
-    print(dataset[6])
+    print(dataset[474])
     print("---")
-    print(dataset[7])
+    print(dataset[1])
 
