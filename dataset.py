@@ -1,5 +1,6 @@
 import pandas as pd
 import torch
+from numpy import double
 from torch.utils.data import Dataset
 import numpy as np
 import ast
@@ -21,7 +22,7 @@ class SeaDataset(Dataset):
             offset = 5
         idx = idx//2
 
-        x = self.data.iloc[idx+1, 2+offset] # target position
+        x = self.data.iloc[idx+1, 2+offset]  # target position
         x = np.append(x, self.data.iloc[idx, 1+offset])  # current motor position
         if self.hall:
             x = np.append(x, self.data.iloc[idx, 2+offset])  # hall position current
@@ -31,14 +32,16 @@ class SeaDataset(Dataset):
             x[0] = x[0] - x[2]
             x = np.delete(x, 2, axis=0)
         if self.vel:
-            x = np.append(x, self.data.iloc[idx, 3+offset:5+offset].values)  # velocity
+            x = np.append(x, self.data.iloc[idx, 3+offset])  # velocity
+            x = np.append(x, self.data.iloc[idx, 4+offset])  # velocity
         if self.imu:
             x = np.concatenate((x, np.asarray(ast.literal_eval(self.data.iloc[idx, 11]))), axis=0)  # imu
         if self.fp:
             x = np.concatenate((x, np.asarray(ast.literal_eval(self.data.iloc[idx, 12]))), axis=0)  # left foot
             x = np.concatenate((x, np.asarray(ast.literal_eval(self.data.iloc[idx, 13]))), axis=0)  # right foot
-        y = self.data.iloc[idx, 5+offset]
-        return x, y
+        y = np.array(self.data.iloc[idx, 5+offset])
+
+        return torch.from_numpy(x).float(), torch.from_numpy(y).float()
 
     def __len__(self):
         return len(self.data) * 2

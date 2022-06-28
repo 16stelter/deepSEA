@@ -1,7 +1,5 @@
 import torch.nn as nn
 import torch.nn.functional as F
-import numpy as np
-from torch import optim
 
 class SimpleMlp(nn.Module):
     def __init__(self, input_shape):
