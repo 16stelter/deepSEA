@@ -13,7 +13,7 @@ import wandb
 
 wandb.init(project="deepsea")
 
-learning_rate = 0.001
+learning_rate = 0.01
 batch_size = 32
 epochs = 100
 input_shape = 23
@@ -22,8 +22,8 @@ model = None
 use_hall, use_vel, use_imu, use_fp = True, True, True, True
 
 argumentList = sys.argv[1:]
-options = "hm:"
-long_options = "help, model:"
+options = "hm:l:hvife:b:"
+long_options = "help, model:, learning-rate:, no-hall, no-vel, no-imu, no-pressure, epochs:, batch-size:"
 
 try:
     # Parsing argument
@@ -37,16 +37,16 @@ try:
             batch_size = int(val)
         elif arg in ("-l", "--learning-rate"):
             learning_rate = float(val)
-        elif arg in ("-nh", "--no-hall"):
+        elif arg in ("-h", "--no-hall"):
             input_shape -= 1
             use_hall = False
-        elif arg in ("-nv", "--no-vel"):
+        elif arg in ("-v", "--no-vel"):
             input_shape -= 2
             use_vel = False
-        elif arg in ("-ni", "--no-imu"):
+        elif arg in ("-i", "--no-imu"):
             input_shape -= 10
             use_imu = False
-        elif arg in ("-nf", "--no-pressure"):
+        elif arg in ("-f", "--no-pressure"):
             input_shape -= 8
             use_pressure = False
         elif arg in ("-m", "--model"):
@@ -69,10 +69,9 @@ except getopt.error as err:
 
 opt = optim.Adam(model.parameters(), lr=learning_rate)
 min_val_loss = np.inf
-best_val_epoch = -1
 criterion = torch.nn.MSELoss()
 
-ds = SeaDataset("data/d3.csv", hall=use_hall, vel=use_vel, imu=use_imu, fp=use_fp)
+ds = SeaDataset("data/d1.csv", hall=use_hall, vel=use_vel, imu=use_imu, fp=use_fp)
 
 wandb.config = {"epochs": epochs, "batch_size": batch_size, "learning_rate": learning_rate, "use_hall": use_hall,
               "use_vel": use_vel, "use_imu": use_imu, "use_fp": use_fp, "model": model.__class__.__name__}
@@ -86,20 +85,25 @@ test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
 for e in range(epochs):
     model.train()
     for i, (x, y) in enumerate(tqdm(train_loader)):
-        opt.zero_grad()
+        y = y.unsqueeze(1)
         y_pred = model(x)
         loss = criterion(y_pred, y)
         loss.backward()
         opt.step()
+        opt.zero_grad()
         if i % 100 == 0:
             wandb.log({"train_loss": loss.item()})
             print("Epoch: {}, batch: {}, loss: {}".format(e, i, loss.item()))
     model.eval()
     val_loss = 0
     for step, (x, y) in enumerate(tqdm(test_loader)):
+        y = y.unsqueeze(1)
         pred = model.forward(x)
         val_loss += criterion(pred, y).item()
     val_loss = val_loss / len(test_loader)
+    if val_loss < min_val_loss:
+        min_val_loss = val_loss
+        torch.save(model.state_dict(), "checkpoints/{}_{}.pt".format(model.__class__.__name__, e))
     wandb.log({"val_loss": val_loss})
     print("Validation. Epoch: {}, val_loss: {}".format(e, val_loss))
     wandb.watch(model)
