@@ -15,7 +15,7 @@ class Reader(Node):
         super().__init__('reader')
 
         data_columns = ['l_knee_pos', 'l_hall_pos', 'l_knee_vel', 'l_hall_vel', 'l_knee_eff',
-                        'r_knee_pos', 'r_hall_pos', 'r_knee_vel', 'r_hall_vel', 'r_hall_eff',
+                        'r_knee_pos', 'r_hall_pos', 'r_knee_vel', 'r_hall_vel', 'r_knee_eff',
                         'imu', 'l_pressure', 'r_pressure', 'command', 'timestamp']
         self.df = pd.DataFrame(columns=data_columns)
 
@@ -64,7 +64,7 @@ class Reader(Node):
         self.previous[1] = hall_r_msg.value
 
         data = copy.deepcopy(self.hist)
-        data.append([imu_msg.orientation.x, imu_msg.orientation.y, imu_msg.orientation.z, imu_msg.orientation.w,
+        data.append([imu_msg.orientation.x, imu_msg.orientation.y, imu_msg.orientation.z, imu_msg.orientation.w, # TODO: quaternion to euler?
                      imu_msg.angular_velocity.x, imu_msg.angular_velocity.y, imu_msg.angular_velocity.z,
                      imu_msg.linear_acceleration.x, imu_msg.linear_acceleration.y, imu_msg.linear_acceleration.z])
         data.append([pressure_l_msg.left_back, pressure_l_msg.left_front, pressure_l_msg.right_front, pressure_l_msg.right_back])

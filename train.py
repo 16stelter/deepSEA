@@ -74,7 +74,7 @@ criterion = torch.nn.MSELoss()
 ds = SeaDataset("data/d1.csv", hall=use_hall, vel=use_vel, imu=use_imu, fp=use_fp)
 
 wandb.config = {"epochs": epochs, "batch_size": batch_size, "learning_rate": learning_rate, "use_hall": use_hall,
-              "use_vel": use_vel, "use_imu": use_imu, "use_fp": use_fp, "model": model.__class__.__name__}
+                "use_vel": use_vel, "use_imu": use_imu, "use_fp": use_fp, "model": model.__class__.__name__}
 
 train_size = int(0.8 * len(ds))
 test_size = len(ds) - train_size
