@@ -9,7 +9,7 @@ data4 = {'beams': [3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 10.0],
                 153.7,
                 150.9,
                 150.1,
-                152
+                152.0
                 ],
          'displacement': [0.9822,
                           0.8976,
@@ -42,13 +42,14 @@ data6 = {'beams': [3, 4, 5, 6, 7, 8, 9, 10],
          ]}
 df6 = pd.DataFrame.from_dict(data6)
 
-data8 = {'beams': [3, 4, 5, 6, 7, 8],
+data8 = {'beams': [3, 4, 5, 6, 7, 8, 9],
          'rf': [156.2,
                 159.9,
                 150.4,
                 151.3,
                 151.5,
-                152.6
+                152.6,
+                150.3
                 ],
          'displacement':[
              0.6826,
@@ -56,8 +57,8 @@ data8 = {'beams': [3, 4, 5, 6, 7, 8],
              0.4845,
              0.4536,
              0.3992,
-             0.3549
-
+             0.3549,
+             0.3532
          ]}
 df8 = pd.DataFrame.from_dict(data8)
 
@@ -66,15 +67,15 @@ sns.set_context('paper')
 sns.set_palette('colorblind')
 
 fig, ax = plt.subplots()
-sns.regplot(x='beams', y='rf', data=df4, ci=None, order=1)
-sns.regplot(x='beams', y='rf', data=df6, ci=None, order=2)
-sns.regplot(x='beams', y='rf', data=df8, ci=None, order=2)
-ax.legend(labels=["4 mm","6 mm","8 mm"])
+sns.regplot(x='beams', y='rf', data=df4, ci=None, order=1, label="4 mm")
+sns.regplot(x='beams', y='rf', data=df6, ci=None, order=2, label="6 mm")
+sns.regplot(x='beams', y='rf', data=df8, ci=None, order=2, label="8 mm")
+plt.legend()
 plt.show()
 
 fig, ax = plt.subplots()
-sns.regplot(x='beams', y='displacement', data=df4, ci=None, order=2)
-sns.regplot(x='beams', y='displacement', data=df6, ci=None, order=2)
-sns.regplot(x='beams', y='displacement', data=df8, ci=None, order=2)
-ax.legend(labels=["4 mm","6 mm","8 mm"])
+sns.regplot(x='beams', y='displacement', data=df4, ci=None, order=2, label="4 mm")
+sns.regplot(x='beams', y='displacement', data=df6, ci=None, order=2, label="6 mm")
+sns.regplot(x='beams', y='displacement', data=df8, ci=None, order=2, label="8 mm")
+plt.legend()
 plt.show()
