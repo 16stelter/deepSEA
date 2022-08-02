@@ -16,7 +16,7 @@ wandb.init(project="deepsea")
 learning_rate = 0.01
 batch_size = 32
 epochs = 100
-input_shape = 23
+input_shape = 20
 model = None
 
 use_hall, use_vel, use_imu, use_fp = True, True, True, True
@@ -71,7 +71,7 @@ opt = optim.Adam(model.parameters(), lr=learning_rate)
 min_val_loss = np.inf
 criterion = torch.nn.MSELoss()
 
-ds = SeaDataset("data/d1.csv", hall=use_hall, vel=use_vel, imu=use_imu, fp=use_fp)
+ds = SeaDataset("data/pid_batt_d0cn.csv", hall=use_hall, vel=use_vel, imu=use_imu, fp=use_fp)
 
 wandb.config = {"epochs": epochs, "batch_size": batch_size, "learning_rate": learning_rate, "use_hall": use_hall,
                 "use_vel": use_vel, "use_imu": use_imu, "use_fp": use_fp, "model": model.__class__.__name__}
