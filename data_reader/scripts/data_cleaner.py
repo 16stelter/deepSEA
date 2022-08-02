@@ -21,13 +21,15 @@ def quaternion_to_euler_angle(x, y, z, w):
     return X, Y, Z
 
 
-df = pd.read_csv("pid_batt_d0.csv")
+df = pd.read_csv("../../data/pid_batt_d0.csv")
 droplist = []
 print(df)
 for index, row in df.iterrows():
     a = ast.literal_eval(df.iloc[index, 12])
     b = ast.literal_eval(df.iloc[index, 13])
-    if sum(a) + sum(b) < 15.0:
+    df.at[index, "l_pressure"] = a[0:3]
+    df.at[index, "r_pressure"] = b[1:4]
+    if sum(a[0:3]) + sum(b[1:4]) < 15.0:
         print("Pressure is " +  str(sum(a) + sum(b)) + "Dropping row.")
         droplist.append(index)
     imu = ast.literal_eval(df.iloc[index, 11])
@@ -35,5 +37,5 @@ for index, row in df.iterrows():
     e.extend(imu[4:])
     df.at[index, "imu"] = e 
 df = df.drop(droplist)      
-df.to_csv("pid_batt_d0c.csv")
+df.to_csv("../../data/pid_batt_d0c.csv")
 print(df)
