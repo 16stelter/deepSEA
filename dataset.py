@@ -6,12 +6,13 @@ import numpy as np
 import ast
 
 class SeaDataset(Dataset):
-    def __init__(self, filename, hall=True, vel=False, imu=False, fp=False, use_poserr=False):
+    def __init__(self, filename, hall=True, vel=False, imu=False, fp=False, forcecontrol=True, use_poserr=False):
         self.data = pd.read_csv(filename)
         self.hall = hall
         self.vel = vel
         self.imu = imu
         self.fp = fp
+        self.forcecontrol = forcecontrol
         self.use_poserr = use_poserr
 
     def __getitem__(self, idx):
@@ -39,7 +40,10 @@ class SeaDataset(Dataset):
         if self.fp:
             x = np.concatenate((x, np.asarray(ast.literal_eval(self.data.iloc[idx, 12]))), axis=0)  # left foot
             x = np.concatenate((x, np.asarray(ast.literal_eval(self.data.iloc[idx, 13]))), axis=0)  # right foot
-        y = np.array(self.data.iloc[idx, 5+offset])
+        if self.forcecontrol:
+            y = np.array(self.data.iloc[idx, 5+offset])
+        else:
+            y = np.array(self.data.iloc[idx+1, 1+offset])
 
         return torch.from_numpy(x).float(), torch.from_numpy(y).float()
 
@@ -48,8 +52,8 @@ class SeaDataset(Dataset):
 
 
 if __name__ == "__main__":
-    dataset = SeaDataset("data/d3.csv")
-    print(dataset[474])
+    dataset = SeaDataset("data/pid_batt_d0c.csv")
+    print(dataset[6])
     print("---")
     print(dataset[1])
 

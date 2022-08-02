@@ -30,12 +30,12 @@ for index, row in df.iterrows():
     df.at[index, "l_pressure"] = a[0:3]
     df.at[index, "r_pressure"] = b[1:4]
     if sum(a[0:3]) + sum(b[1:4]) < 15.0:
-        print("Pressure is " +  str(sum(a) + sum(b)) + "Dropping row.")
+        print("Pressure is " +  str(sum(a[0:3]) + sum(b[1:4])) + "Dropping row.")
         droplist.append(index)
     imu = ast.literal_eval(df.iloc[index, 11])
     e = list(quaternion_to_euler_angle(imu[0], imu[1], imu[2], imu[3]))
     e.extend(imu[4:])
     df.at[index, "imu"] = e 
 df = df.drop(droplist)      
-df.to_csv("../../data/pid_batt_d0c.csv")
+df.to_csv("../../data/pid_batt_d0c.csv",index=False)
 print(df)
