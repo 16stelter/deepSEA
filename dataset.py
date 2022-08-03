@@ -6,12 +6,13 @@ import numpy as np
 import ast
 
 class SeaDataset(Dataset):
-    def __init__(self, filename, hall=True, vel=False, imu=False, fp=False, forcecontrol=False, use_poserr=False):
+    def __init__(self, filename, hall=True, vel=False, imu=False, fp=False, eff=False, forcecontrol=False, use_poserr=False):
         self.data = pd.read_csv(filename)
         self.hall = hall
         self.vel = vel
         self.imu = imu
         self.fp = fp
+        self.eff = eff
         self.forcecontrol = forcecontrol
         self.use_poserr = use_poserr
 
@@ -35,6 +36,8 @@ class SeaDataset(Dataset):
         if self.vel:
             x = np.append(x, self.data.iloc[idx, 3+offset])  # velocity
             x = np.append(x, self.data.iloc[idx, 4+offset])  # velocity
+        if self.eff:
+            x = np.append(x, self.data.iloc[idx, 5+offset])
         if self.imu:
             x = np.concatenate((x, np.asarray(ast.literal_eval(self.data.iloc[idx, 11]))), axis=0)  # imu
         if self.fp:
