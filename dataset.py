@@ -6,7 +6,7 @@ import numpy as np
 import ast
 
 class SeaDataset(Dataset):
-    def __init__(self, filename, hall=True, vel=False, imu=False, fp=False, forcecontrol=True, use_poserr=False):
+    def __init__(self, filename, hall=True, vel=False, imu=False, fp=False, forcecontrol=False, use_poserr=False):
         self.data = pd.read_csv(filename)
         self.hall = hall
         self.vel = vel

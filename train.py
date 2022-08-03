@@ -4,6 +4,7 @@ import getopt, sys
 
 from torch import optim
 from torch.utils.data import DataLoader
+from torchmetrics import R2Score, MeanSquaredLogError
 from tqdm import tqdm
 
 from models import simplemlp, siam
@@ -69,7 +70,7 @@ except getopt.error as err:
 
 opt = optim.Adam(model.parameters(), lr=learning_rate)
 min_val_loss = np.inf
-criterion = torch.nn.MSELoss()
+criterion = torch.nn.MSELoss()  # RMSE
 
 ds = SeaDataset("data/pid_batt_d0cn.csv", hall=use_hall, vel=use_vel, imu=use_imu, fp=use_fp)
 
@@ -82,29 +83,48 @@ train_dataset, test_dataset = torch.utils.data.random_split(ds, [train_size, tes
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
 
+r2 = R2Score()
+msle = MeanSquaredLogError()
+
+no_impr_count = 0
 for e in range(epochs):
     model.train()
     for i, (x, y) in enumerate(tqdm(train_loader)):
         y = y.unsqueeze(1)
         y_pred = model(x)
-        loss = criterion(y_pred, y)
+        loss = torch.sqrt(criterion(y_pred, y))
         loss.backward()
         opt.step()
         opt.zero_grad()
         if i % 100 == 0:
             wandb.log({"train_loss": loss.item()})
-            print("Epoch: {}, batch: {}, loss: {}".format(e, i, loss.item()))
+            wandb.log({"train_r2": r2(y_pred, y)})
+            wandb.log({"train_msle": msle(abs(y_pred), abs(y))})
     model.eval()
     val_loss = 0
+    val_r2 = 0
+    val_msle = 0
     for step, (x, y) in enumerate(tqdm(test_loader)):
         y = y.unsqueeze(1)
         pred = model.forward(x)
-        val_loss += criterion(pred, y).item()
+        val_loss += torch.sqrt(criterion(pred, y)).item()
+        val_r2 += r2(pred, y)
+        val_msle += msle(abs(pred), abs(y))
     val_loss = val_loss / len(test_loader)
+    val_r2 = val_r2 / len(test_loader)
+    val_msle = val_msle / len(test_loader)
+    no_impr_count += 1 if val_loss > min_val_loss else 0
     if val_loss < min_val_loss:
         min_val_loss = val_loss
         torch.save(model.state_dict(), "checkpoints/{}_{}.pt".format(model.__class__.__name__, e))
+        no_impr_count = 0
     wandb.log({"val_loss": val_loss})
+    wandb.log({"val_r2": val_r2})
+    wandb.log({"val_msle": val_msle})
     print("Validation. Epoch: {}, val_loss: {}".format(e, val_loss))
     wandb.watch(model)
+    if no_impr_count > 10:
+        print("Early stopping")
+        torch.save(model.state_dict(), "checkpoints/{}_{}.pt".format(model.__class__.__name__, e))
+        break
 
