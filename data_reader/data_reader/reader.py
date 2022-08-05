@@ -64,7 +64,7 @@ class Reader(Node):
         self.previous[1] = hall_r_msg.value
 
         data = copy.deepcopy(self.hist)
-        data.append([imu_msg.orientation.x, imu_msg.orientation.y, imu_msg.orientation.z, imu_msg.orientation.w, # TODO: quaternion to euler?
+        data.append([imu_msg.orientation.x, imu_msg.orientation.y, imu_msg.orientation.z, imu_msg.orientation.w,
                      imu_msg.angular_velocity.x, imu_msg.angular_velocity.y, imu_msg.angular_velocity.z,
                      imu_msg.linear_acceleration.x, imu_msg.linear_acceleration.y, imu_msg.linear_acceleration.z])
         data.append([pressure_l_msg.left_back, pressure_l_msg.left_front, pressure_l_msg.right_front, pressure_l_msg.right_back])
