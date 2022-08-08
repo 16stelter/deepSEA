@@ -51,8 +51,8 @@ try:
             input_shape -= 1
             use_eff = False
         elif arg in ("-f", "--no-pressure"):
-            input_shape -= 8
-            use_pressure = False
+            input_shape -= 6
+            use_fp = False
         elif arg in ("-m", "--model"):
             if val == "mlp":
                 model = simplemlp.SimpleMlp(input_shape)
@@ -75,7 +75,7 @@ opt = optim.Adam(model.parameters(), lr=learning_rate)
 min_val_loss = np.inf
 criterion = torch.nn.MSELoss()  # RMSE
 
-ds = SeaDataset("data/pid_batt_d0cn.csv", hall=use_hall, vel=use_vel, eff=use_eff, imu=use_imu, fp=use_fp)
+ds = SeaDataset("../../data/pid_batt_d0cn.csv", hall=use_hall, vel=use_vel, eff=use_eff, imu=use_imu, fp=use_fp)
 
 wandb.config = {"epochs": epochs, "batch_size": batch_size, "learning_rate": learning_rate, "use_hall": use_hall,
                 "use_vel": use_vel, "use_imu": use_imu, "use_fp": use_fp, "model": model.__class__.__name__}
