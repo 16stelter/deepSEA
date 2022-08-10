@@ -74,10 +74,10 @@ class DeepSea(Node):
                 else:
                     out.positions.append(self.latched_command.positions[j])
 
-                out.joint_names.append(self.latched_command.joint_names[i])
-                out.velocities.append(self.latched_command.velocities[i])
-                out.accelerations.append(self.latched_command.accelerations[i])
-                out.max_currents.append(self.latched_command.max_currents[i])
+                out.joint_names.append(self.latched_command.joint_names[j])
+                out.velocities.append(self.latched_command.velocities[j])
+                out.accelerations.append(self.latched_command.accelerations[j])
+                out.max_currents.append(self.latched_command.max_currents[j])
 
                 self.pub.publish(out)
 
