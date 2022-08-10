@@ -12,8 +12,6 @@ from dataset import SeaDataset
 
 import wandb
 
-wandb.init(project="deepsea")
-
 learning_rate = 0.01
 batch_size = 32
 epochs = 100
@@ -79,8 +77,10 @@ criterion = torch.nn.MSELoss()  # RMSE
 
 ds = SeaDataset("../../data/pid_batt_d0cn.csv", hall=use_hall, vel=use_vel, eff=use_eff, imu=use_imu, fp=use_fp)
 
-wandb.config = {"epochs": epochs, "batch_size": batch_size, "learning_rate": learning_rate, "use_hall": use_hall,
-                "use_vel": use_vel, "use_imu": use_imu, "use_fp": use_fp, "model": model.__class__.__name__}
+
+wandb.init(project="deepsea", config={"epochs": epochs, "batch_size": batch_size, "learning_rate": learning_rate,
+                                      "use_hall": use_hall, "use_vel": use_vel, "use_imu": use_imu, "use_fp": use_fp,
+                                      "model": model.__class__.__name__})
 
 train_size = int(0.8 * len(ds))
 test_size = len(ds) - train_size
