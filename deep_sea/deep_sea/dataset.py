@@ -35,7 +35,8 @@ class SeaDataset(Dataset):
             x = np.delete(x, 2, axis=0)
         if self.vel:
             x = np.append(x, self.data.iloc[idx, 3+offset])  # velocity
-            x = np.append(x, self.data.iloc[idx, 4+offset])  # velocity
+            if self.hall:
+                x = np.append(x, self.data.iloc[idx, 4+offset])  # velocity
         if self.eff:
             x = np.append(x, self.data.iloc[idx, 5+offset])
         if self.imu:

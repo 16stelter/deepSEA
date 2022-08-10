@@ -39,13 +39,13 @@ try:
         elif arg in ("-l", "--learning-rate"):
             learning_rate = float(val)
         elif arg in ("-h", "--no-hall"):
-            input_shape -= 1
+            input_shape -= 2
             use_hall = False
         elif arg in ("-v", "--no-vel"):
             input_shape -= 2
             use_vel = False
         elif arg in ("-i", "--no-imu"):
-            input_shape -= 10
+            input_shape -= 9
             use_imu = False
         elif arg in ("-t", "--no-effort"):
             input_shape -= 1
@@ -54,6 +54,8 @@ try:
             input_shape -= 6
             use_fp = False
         elif arg in ("-m", "--model"):
+            if not (use_vel or use_hall):
+                input_shape +=1
             if val == "mlp":
                 model = simplemlp.SimpleMlp(input_shape)
             elif val == "siam":
@@ -119,7 +121,7 @@ for e in range(epochs):
     no_impr_count += 1 if val_loss > min_val_loss else 0
     if val_loss < min_val_loss:
         min_val_loss = val_loss
-        torch.save(model.state_dict(), "checkpoints/{}_{}.pt".format(model.__class__.__name__, e))
+        torch.save(model.state_dict(), "checkpoints/p_{}_{}.pt".format(model.__class__.__name__, e))
         no_impr_count = 0
     wandb.log({"val_loss": val_loss})
     wandb.log({"val_r2": val_r2})
@@ -128,6 +130,6 @@ for e in range(epochs):
     wandb.watch(model)
     if no_impr_count > 10:
         print("Early stopping")
-        torch.save(model.state_dict(), "checkpoints/{}_{}.pt".format(model.__class__.__name__, e))
+        torch.save(model.state_dict(), "checkpoints/p_{}_{}.pt".format(model.__class__.__name__, e))
         break
 
