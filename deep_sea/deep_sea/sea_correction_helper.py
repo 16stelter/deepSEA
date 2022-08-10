@@ -1,19 +1,23 @@
 import math
 
 import rclpy
+import torch
 from rclpy.node import Node
-from models.simplemlp import SimpleMlp
+from deep_sea.models.simplemlp import SimpleMlp
 from bitbots_msgs.srv import DeepSeaService
 from sensor_msgs.msg import Imu, JointState
 from bitbots_msgs.msg import FootPressure, FloatStamped, JointCommand
 
 
 class DeepSea(Node):
-    def __init__(self, model_type="mlp", input_size=0):
+    def __init__(self, model_type="mlp", input_size=21):
         super().__init__("deepsea")
         self.model_type = model_type
         if self.model_type == "mlp":
             self.model = SimpleMlp(input_size)
+            checkpoint = torch.load("../checkpoints/SimpleMlp_407.pt")
+            self.model.eval()
+            self.model.load_state_dict(checkpoint)
         else:
             raise Exception("Unknown model type")
 
@@ -31,14 +35,14 @@ class DeepSea(Node):
         self.create_subscription(FloatStamped, "/hall/right/filtered", self.r_hall_cb, 1)
         self.create_subscription(JointState, "/joint_states", self.joint_state_cb, 1)
 
-        self.srv = self.create_service(DeepSeaService, "deepsea_service", self.service_cb)
+        self.srv = self.create_service(DeepSeaService, "deep_sea_service", self.service_cb)
 
     def service_cb(self, request, response):
         sample = [request.input]
         sample.extend(self.data)
-        if self.request.leg == "left":
+        if request.leg == "LKnee":
             sample.extend(self.l_data)
-        elif self.request.leg == "right":
+        elif request.leg == "RKnee":
             sample.extend(self.r_data)
         response.result = self.model.predict(sample)
         return response
@@ -55,14 +59,14 @@ class DeepSea(Node):
                 self.r_data[4] = msg.effort[i]
 
     def l_hall_cb(self, msg):
-        self.l_data[1] = msg.data
-        self.l_data[3] = msg.data - self.l_previous
-        self.l_previous = msg.data
+        self.l_data[1] = msg.value
+        self.l_data[3] = msg.value - self.l_previous
+        self.l_previous = msg.value
 
     def r_hall_cb(self, msg):
-        self.r_data[1] = msg.data
-        self.r_data[3] = msg.data - self.r_previous
-        self.r_previous = msg.data
+        self.r_data[1] = msg.value
+        self.r_data[3] = msg.value - self.r_previous
+        self.r_previous = msg.value
 
     def imu_cb(self, msg):
         imu = [msg.orientation.x, msg.orientation.y, msg.orientation.z, msg.orientation.w,
