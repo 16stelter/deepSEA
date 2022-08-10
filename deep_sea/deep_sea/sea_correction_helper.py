@@ -1,10 +1,10 @@
+#!/usr/bin/env python3
 import math
 
 import rclpy
 import torch
 from rclpy.node import Node
 from deep_sea.models.simplemlp import SimpleMlp
-from bitbots_msgs.srv import DeepSeaService
 from sensor_msgs.msg import Imu, JointState
 from bitbots_msgs.msg import FootPressure, FloatStamped, JointCommand
 
@@ -12,10 +12,11 @@ from bitbots_msgs.msg import FootPressure, FloatStamped, JointCommand
 class DeepSea(Node):
     def __init__(self, model_type="mlp", input_size=21):
         super().__init__("deepsea")
+        self.latched_command = None
         self.model_type = model_type
         if self.model_type == "mlp":
             self.model = SimpleMlp(input_size)
-            checkpoint = torch.load("../checkpoints/SimpleMlp_407.pt")
+            checkpoint = torch.load("checkpoints/SimpleMlp_407.pt")
             self.model.eval()
             self.model.load_state_dict(checkpoint)
         else:
@@ -34,29 +35,54 @@ class DeepSea(Node):
         self.create_subscription(FloatStamped, "/hall/left/filtered", self.l_hall_cb, 1)
         self.create_subscription(FloatStamped, "/hall/right/filtered", self.r_hall_cb, 1)
         self.create_subscription(JointState, "/joint_states", self.joint_state_cb, 1)
+        self.create_subscription(JointCommand, "/DynamixelController/command", self.command_cb, 1)
+        self.pub = self.create_publisher(JointCommand, "/DynamixelController/corrected", 1)
 
-        self.srv = self.create_service(DeepSeaService, "deep_sea_service", self.service_cb)
-
-    def service_cb(self, request, response):
-        sample = [request.input]
-        sample.extend(self.data)
-        if request.leg == "LKnee":
-            sample.extend(self.l_data)
-        elif request.leg == "RKnee":
-            sample.extend(self.r_data)
-        response.result = self.model.predict(sample)
-        return response
+    def command_cb(self, msg):
+        self.latched_command = msg
 
     def joint_state_cb(self, msg):
-        for i in range(len(msg.name)):
-            if msg.name[i] == "LKnee":
-                self.l_data[0] = msg.position[i]
-                self.l_data[2] = msg.velocity[i]
-                self.l_data[4] = msg.effort[i]
-            elif msg.name[i] == "RKnee":
-                self.r_data[0] = msg.position[i]
-                self.r_data[2] = msg.velocity[i]
-                self.r_data[4] = msg.effort[i]
+        out = JointCommand()
+        if self.latched_command is not None:
+            for i in range(len(msg.name)):
+                if msg.name[i] == "LKnee":
+                    for j in range(len(self.latched_command.name)):
+                        if self.latched_command.joint_names[j] == "LKnee":
+                            sample = [self.latched_command.positions[j]]
+                            break
+                    self.l_data[0] = msg.position[i]
+                    self.l_data[2] = msg.velocity[i]
+                    self.l_data[4] = msg.effort[i]
+                    sample.extend(self.l_data)
+                    sample.extend(self.data)
+                    print(str(self.model.forward(torch.tensor(sample)).value))
+                    out.joint_names.append(self.latched_command.joint_names[i])  # TODO: replace with network output after checking
+                    out.positions.append(self.latched_command.positions[i])
+                    out.velocities.append(self.latched_command.velocities[i])
+                    out.accelerations.append(self.latched_command.accelerations[i])
+                    out.max_currents.append(self.latched_command.max_currents[i])
+                elif msg.name[i] == "RKnee":
+                    for j in range(len(self.latched_command.name)):
+                        if self.latched_command.joint_names[j] == "RKnee":
+                            sample = [self.latched_command.positions[j]]
+                            break
+                    self.r_data[0] = msg.position[i]
+                    self.r_data[2] = msg.velocity[i]
+                    self.r_data[4] = msg.effort[i]
+                    sample.extend(self.r_data)
+                    sample.extend(self.data)
+                    print(str(self.model.forward(torch.tensor(sample)).value))
+                    out.joint_names.append(self.latched_command.joint_names[i])  # TODO: replace with network output after checking
+                    out.positions.append(self.latched_command.positions[i])
+                    out.velocities.append(self.latched_command.velocities[i])
+                    out.accelerations.append(self.latched_command.accelerations[i])
+                    out.max_currents.append(self.latched_command.max_currents[i])
+                else:
+                    out.joint_names.append(self.latched_command.joint_names[i])
+                    out.positions.append(self.latched_command.positions[i])
+                    out.velocities.append(self.latched_command.velocities[i])
+                    out.accelerations.append(self.latched_command.accelerations[i])
+                    out.max_currents.append(self.latched_command.max_currents[i])
 
     def l_hall_cb(self, msg):
         self.l_data[1] = msg.value
