@@ -22,9 +22,13 @@ class DeepSea(Node):
         else:
             raise Exception("Unknown model type")
 
-        self.l_data = [0.0] * 5
-        self.r_data = [0.0] * 5
-        self.data = [0.0] * 15
+        self.left_foot = [0.0] * 3
+        self.right_foot = [0.0] * 3
+        self.imu = [0.0] * 9
+        self.left_hall_pos = 0.0
+        self.right_hall_pos = 0.0
+        self.left_hall_vel = 0.0
+        self.right_hall_vel = 0.0
 
         self.l_previous = 0.0
         self.r_previous = 0.0
@@ -44,69 +48,61 @@ class DeepSea(Node):
     def joint_state_cb(self, msg):
         out = JointCommand()
         if self.latched_command is not None:
-            for i in range(len(msg.name)):
-                if msg.name[i] == "LKnee":
-                    for j in range(len(self.latched_command.name)):
-                        if self.latched_command.joint_names[j] == "LKnee":
-                            sample = [self.latched_command.positions[j]]
+            for j in range(len(self.latched_command.joint_names)):
+                if self.latched_command.joint_names[j] == "LKnee":
+                    for i in range(len(msg.name)):
+                        if msg.name[i] == "LKnee":
+                            sample = [self.latched_command.positions[j], msg.position[i], self.left_hall_pos,
+                                      msg.velocity[i], self.left_hall_vel, msg.effort[i]]
+                            sample.extend(self.imu)
+                            sample.extend(self.left_foot)
+                            sample.extend(self.right_foot)
                             break
-                    self.l_data[0] = msg.position[i]
-                    self.l_data[2] = msg.velocity[i]
-                    self.l_data[4] = msg.effort[i]
-                    sample.extend(self.l_data)
-                    sample.extend(self.data)
-                    print(str(self.model.forward(torch.tensor(sample)).value))
-                    out.joint_names.append(self.latched_command.joint_names[i])  # TODO: replace with network output after checking
-                    out.positions.append(self.latched_command.positions[i])
-                    out.velocities.append(self.latched_command.velocities[i])
-                    out.accelerations.append(self.latched_command.accelerations[i])
-                    out.max_currents.append(self.latched_command.max_currents[i])
-                elif msg.name[i] == "RKnee":
-                    for j in range(len(self.latched_command.name)):
-                        if self.latched_command.joint_names[j] == "RKnee":
-                            sample = [self.latched_command.positions[j]]
+                    prediction = self.model.forward(torch.tensor(sample)).item() * math.pi
+                elif self.latched_command.joint_names[j] == "RKnee":
+                    for i in range(len(msg.name)):
+                        if msg.name[i] == "RKnee":
+                            sample = [self.latched_command.positions[j], msg.position[i], self.left_hall_pos,
+                                      msg.velocity[i], self.left_hall_vel, msg.effort[i]]
+                            sample.extend(self.imu)
+                            sample.extend(self.left_foot)
+                            sample.extend(self.right_foot)
                             break
-                    self.r_data[0] = msg.position[i]
-                    self.r_data[2] = msg.velocity[i]
-                    self.r_data[4] = msg.effort[i]
-                    sample.extend(self.r_data)
-                    sample.extend(self.data)
-                    print(str(self.model.forward(torch.tensor(sample)).value))
-                    out.joint_names.append(self.latched_command.joint_names[i])  # TODO: replace with network output after checking
-                    out.positions.append(self.latched_command.positions[i])
-                    out.velocities.append(self.latched_command.velocities[i])
-                    out.accelerations.append(self.latched_command.accelerations[i])
-                    out.max_currents.append(self.latched_command.max_currents[i])
+                    prediction = self.model.forward(torch.tensor(sample)).item() * math.pi
+                if self.latched_command.joint_names[j] in ["RKnee", "LKnee"]:
+                    out.positions.append(prediction)
                 else:
-                    out.joint_names.append(self.latched_command.joint_names[i])
-                    out.positions.append(self.latched_command.positions[i])
-                    out.velocities.append(self.latched_command.velocities[i])
-                    out.accelerations.append(self.latched_command.accelerations[i])
-                    out.max_currents.append(self.latched_command.max_currents[i])
+                    out.positions.append(self.latched_command.positions[j])
+
+                out.joint_names.append(self.latched_command.joint_names[i])
+                out.velocities.append(self.latched_command.velocities[i])
+                out.accelerations.append(self.latched_command.accelerations[i])
+                out.max_currents.append(self.latched_command.max_currents[i])
+
+                self.pub.publish(out)
 
     def l_hall_cb(self, msg):
-        self.l_data[1] = msg.value
-        self.l_data[3] = msg.value - self.l_previous
+        self.left_hall_pos = msg.value
+        self.left_hall_vel = msg.value - self.l_previous
         self.l_previous = msg.value
 
     def r_hall_cb(self, msg):
-        self.r_data[1] = msg.value
-        self.r_data[3] = msg.value - self.r_previous
+        self.right_hall_pos = msg.value
+        self.right_hall_vel = msg.value - self.r_previous
         self.r_previous = msg.value
 
     def imu_cb(self, msg):
         imu = [msg.orientation.x, msg.orientation.y, msg.orientation.z, msg.orientation.w,
                msg.angular_velocity.x, msg.angular_velocity.y, msg.angular_velocity.z,
                msg.linear_acceleration.x, msg.linear_acceleration.y, msg.linear_acceleration.z]
-        e = list(quaternion_to_euler_angle(imu[0], imu[1], imu[2], imu[3]))
-        e.extend(imu[4:])
-        self.data[0:8] = e
+        self.imu = list(quaternion_to_euler_angle(imu[0], imu[1], imu[2], imu[3]))
+        self.imu.extend(imu[4:])
 
     def l_pressure_cb(self, msg):
-        self.data[9:12] = [msg.left_front, msg.right_front, msg.right_back]
+        self.left_foot = [msg.left_front, msg.right_front, msg.right_back]
 
     def r_pressure_cb(self, msg):
-        self.data[12:15] = [msg.left_back, msg.left_front, msg.right_front]
+        self.right_foot = [msg.left_back, msg.left_front, msg.right_front]
 
 
 def quaternion_to_euler_angle(x, y, z, w):
