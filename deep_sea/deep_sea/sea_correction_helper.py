@@ -41,6 +41,8 @@ class DeepSea(Node):
         self.create_subscription(JointState, "/joint_states", self.joint_state_cb, 1)
         self.create_subscription(JointCommand, "/DynamixelController/command", self.command_cb, 1)
         self.pub = self.create_publisher(JointCommand, "/DynamixelController/corrected", 1)
+        self.debug_pub_l = self.create_publisher(FloatStamped, "/debug/l_hall_error", 1)
+        self.debug_pub_r = self.create_publisher(FloatStamped, "/debug/r_hall_error", 1)
 
     def command_cb(self, msg):
         self.latched_command = msg
@@ -52,6 +54,9 @@ class DeepSea(Node):
                 if self.latched_command.joint_names[j] == "LKnee":
                     for i in range(len(msg.name)):
                         if msg.name[i] == "LKnee":
+                            debug_msg = FloatStamped()
+                            debug_msg.value = self.left_hall_pos - msg.position[i]
+                            self.debug_pub_l.publish(debug_msg)
                             sample = [self.latched_command.positions[j], msg.position[i], self.left_hall_pos,
                                       msg.velocity[i], self.left_hall_vel, msg.effort[i]]
                             sample.extend(self.imu)
@@ -62,6 +67,9 @@ class DeepSea(Node):
                 elif self.latched_command.joint_names[j] == "RKnee":
                     for i in range(len(msg.name)):
                         if msg.name[i] == "RKnee":
+                            debug_msg = FloatStamped()
+                            debug_msg.value = self.right_hall_pos - msg.position[i]
+                            self.debug_pub_r.publish(debug_msg)
                             sample = [self.latched_command.positions[j], msg.position[i], self.left_hall_pos,
                                       msg.velocity[i], self.left_hall_vel, msg.effort[i]]
                             sample.extend(self.imu)

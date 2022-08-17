@@ -26,8 +26,8 @@ find_package(backward_ros REQUIRED)
 include_directories(include)
 
 # Create Cpp executable
-add_executable(cpp_executable src/sea_correction_helper.cpp)
-ament_target_dependencies(cpp_executable rclcpp
+add_executable(sea_correction_helper_cpp src/sea_correction_helper.cpp)
+ament_target_dependencies(sea_correction_helper_cpp rclcpp
         bitbots_msgs
         pluginlib
         rosidl_typesupport_cpp
@@ -39,7 +39,7 @@ ament_target_dependencies(cpp_executable rclcpp
 
 # Install Cpp executables
 install(TARGETS
-        cpp_executable
+        sea_correction_helper_cpp
         DESTINATION lib/${PROJECT_NAME}
         )
 

@@ -36,6 +36,8 @@ namespace deep_sea {
     rclcpp::Subscription<bitbots_msgs::msg::JointCommand>::SharedPtr sub_command_;
     rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr sub_state_;
     rclcpp::Publisher<bitbots_msgs::msg::JointCommand>::SharedPtr pub_;
+    rclcpp::Publisher<bitbots_msgs::msg::FloatStamped>::SharedPtr debug_pub_l_;
+    rclcpp::Publisher<bitbots_msgs::msg::FloatStamped>::SharedPtr debug_pub_r_;
 
     bitbots_msgs::msg::JointCommand latched_command_;
   };

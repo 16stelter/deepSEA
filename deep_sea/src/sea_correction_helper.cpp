@@ -26,19 +26,21 @@ namespace deep_sea {
 
     latched_command_ = bitbots_msgs::msg::JointCommand();
 
-    sub_command_ = nh_->create_subscription<bitbots_msgs::msg::JointCommand>(
+    sub_command_ = this->create_subscription<bitbots_msgs::msg::JointCommand>(
       "/DynamixelController/command", 1, std::bind(&SeaCorrectionHelper::commandCb,
                                                    this, std::placeholders::_1));
-    sub_hall_l_ = nh_->create_subscription<bitbots_msgs::msg::FloatStamped>(
+    sub_hall_l_ = this->create_subscription<bitbots_msgs::msg::FloatStamped>(
       "/hall/left/filtered", 1, std::bind(&SeaCorrectionHelper::hallLCb,
                                           this, std::placeholders::_1));
-    sub_hall_r_ = nh_->create_subscription<bitbots_msgs::msg::FloatStamped>(
+    sub_hall_r_ = this->create_subscription<bitbots_msgs::msg::FloatStamped>(
       "/hall/right/filtered", 1, std::bind(&SeaCorrectionHelper::hallRCb,
                                            this, std::placeholders::_1));
-    sub_state_ = nh_->create_subscription<sensor_msgs::msg::JointState>(
+    sub_state_ = this->create_subscription<sensor_msgs::msg::JointState>(
       "/joint_states", 1, std::bind(&SeaCorrectionHelper::stateCb,
                                     this, std::placeholders::_1));
-    pub_ = nh_->create_publisher<bitbots_msgs::msg::JointCommand>("/DynamixelController/corrected", 1);
+    pub_ = this->create_publisher<bitbots_msgs::msg::JointCommand>("/DynamixelController/corrected", 1);
+    debug_pub_l_ = this->create_publisher<bitbots_msgs::msg::FloatStamped>("/debug/l_hall_error", 1);
+    debug_pub_r_ = this->create_publisher<bitbots_msgs::msg::FloatStamped>("/debug/r_hall_error", 1);
   }
 
   void SeaCorrectionHelper::hallLCb(const bitbots_msgs::msg::FloatStamped &msg) {
@@ -58,7 +60,7 @@ namespace deep_sea {
     if (latched_command_.joint_names.size() != 0) {
       out = latched_command_;
     } else {
-      out.header.stamp = nh_->get_clock()->now();
+      out.header.stamp = this->get_clock()->now();
       out.joint_names = msg.name;
       out.positions = msg.position;
       out.velocities = msg.velocity;
@@ -68,9 +70,21 @@ namespace deep_sea {
     }
     for (unsigned int i = 0; i < out.joint_names.size(); i++) {
       if (out.joint_names[i] == "LKnee") {
+        // publish error as debug msg
+        bitbots_msgs::msg::FloatStamped debug_msg;
+        debug_msg.header.stamp = this->get_clock()->now();
+        debug_msg.value = hall_l_ - out.positions[i];
+        debug_pub_l_->publish(debug_msg);
+        // correct knee position
         out.positions[i] -= lknee_pid_->computeCommand(hall_l_ - out.positions[i],
                                                        rclcpp::Duration::from_nanoseconds(1e9 * 0.001));
       } else if (out.joint_names[i] == "RKnee") {
+        // Publish error as debug msg
+        bitbots_msgs::msg::FloatStamped debug_msg;
+        debug_msg.header.stamp = this->get_clock()->now();
+        debug_msg.value = hall_l_ - out.positions[i];
+        debug_pub_r_->publish(debug_msg);
+        // correct knee position
         out.positions[i] -= rknee_pid_->computeCommand(hall_r_ - out.positions[i],
                                                        rclcpp::Duration::from_nanoseconds(1e9 * 0.001));
       }
