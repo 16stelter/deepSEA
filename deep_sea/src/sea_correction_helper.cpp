@@ -82,7 +82,7 @@ namespace deep_sea {
         // Publish error as debug msg
         bitbots_msgs::msg::FloatStamped debug_msg;
         debug_msg.header.stamp = this->get_clock()->now();
-        debug_msg.value = hall_l_ - out.positions[i];
+        debug_msg.value = hall_r_ - out.positions[i];
         debug_pub_r_->publish(debug_msg);
         // correct knee position
         out.positions[i] -= rknee_pid_->computeCommand(hall_r_ - out.positions[i],

@@ -43,6 +43,7 @@ class Record:
 
         self.node.get_logger().warning("Walking is all done! Proceed with standing up now...")
         self.node.get_logger().warning("Moving on to standup. 3 trials per direction.")
+        input()
         for i in range(3):
             self.node.get_logger().warning("Place robot on front, hold it secure. Press any key to begin.")
             input()
