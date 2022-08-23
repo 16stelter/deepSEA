@@ -55,10 +55,11 @@ class DeepSea(Node):
                     for i in range(len(msg.name)):
                         if msg.name[i] == "LKnee":
                             debug_msg = FloatStamped()
-                            debug_msg.value = self.left_hall_pos - msg.position[i]
+                            debug_msg.value = self.left_hall_pos - self.latched_command.positions[j]
                             self.debug_pub_l.publish(debug_msg)
-                            sample = [self.latched_command.positions[j], msg.position[i], self.left_hall_pos,
-                                      msg.velocity[i], self.left_hall_vel, msg.effort[i]]
+                            sample = [self.latched_command.positions[j] / math.pi, msg.position[i] / math.pi,
+                                      self.left_hall_pos / math.pi, msg.velocity[i], self.left_hall_vel,
+                                      msg.effort[i] / 11.7]  # normalize this
                             sample.extend(self.imu)
                             sample.extend(self.left_foot)
                             sample.extend(self.right_foot)
@@ -68,10 +69,11 @@ class DeepSea(Node):
                     for i in range(len(msg.name)):
                         if msg.name[i] == "RKnee":
                             debug_msg = FloatStamped()
-                            debug_msg.value = self.right_hall_pos - msg.position[i]
+                            debug_msg.value = self.right_hall_pos - self.latched_command.positions[j]
                             self.debug_pub_r.publish(debug_msg)
-                            sample = [self.latched_command.positions[j], msg.position[i], self.left_hall_pos,
-                                      msg.velocity[i], self.left_hall_vel, msg.effort[i]]
+                            sample = [self.latched_command.positions[j] / math.pi, msg.position[i] / math.pi,
+                                      self.right_hall_pos / math.pi, msg.velocity[i], self.right_hall_vel,
+                                      msg.effort[i] / 11.7]  # normalize this
                             sample.extend(self.imu)
                             sample.extend(self.left_foot)
                             sample.extend(self.right_foot)
