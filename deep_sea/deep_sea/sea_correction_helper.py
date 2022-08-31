@@ -48,12 +48,35 @@ class DeepSea(Node):
         self.pub = self.create_publisher(JointCommand, "/DynamixelController/corrected", 1)
         self.debug_pub_l = self.create_publisher(FloatStamped, "/debug/l_hall_error", 1)
         self.debug_pub_r = self.create_publisher(FloatStamped, "/debug/r_hall_error", 1)
+        self.debug_torque_pub_l = self.create_publisher(FloatStamped, "/debug/l_torque", 1)
+        self.debug_torque_pub_r = self.create_publisher(FloatStamped, "/debug/r_torque", 1)
+        self.debug_command_pub_l = self.create_publisher(FloatStamped, "/debug/l_command", 1)
+        self.debug_command_pub_r = self.create_publisher(FloatStamped, "/debug/r_command", 1)
 
     def command_cb(self, msg):
         self.latched_command = msg
+        for i in range(len(msg.joint_names)):
+            if msg.joint_names[i] == "LKnee":
+                debug_msg = FloatStamped()
+                debug_msg.value = msg.position[i]
+                self.debug_command_pub_l.publish(debug_msg)
+            elif msg.joint_names[i] == "RKnee":
+                debug_msg = FloatStamped()
+                debug_msg.value = msg.position[i]
+                self.debug_command_pub_r.publish(debug_msg)
 
     def joint_state_cb(self, msg):
         out = JointCommand()
+        for i in range(len(msg.name)):
+            if msg.name[i] == "LKnee":
+                torque_msg = FloatStamped()
+                torque_msg.value = (self.left_hall_pos - msg.position[i]) * 9.10564334645581
+                self.debug_torque_pub_l.publish(torque_msg)
+            elif msg.name[i] == "RKnee":
+                torque_msg = FloatStamped()
+                torque_msg.value = (self.right_hall_pos - msg.position[i]) * 9.10564334645581
+                self.debug_torque_pub_r.publish(torque_msg)
+
         if self.latched_command is not None:
             for j in range(len(self.latched_command.joint_names)):
                 if self.latched_command.joint_names[j] == "LKnee":

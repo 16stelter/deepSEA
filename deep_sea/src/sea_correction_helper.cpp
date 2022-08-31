@@ -40,7 +40,11 @@ namespace deep_sea {
                                     this, std::placeholders::_1));
     pub_ = this->create_publisher<bitbots_msgs::msg::JointCommand>("/DynamixelController/corrected", 1);
     debug_pub_l_ = this->create_publisher<bitbots_msgs::msg::FloatStamped>("/debug/l_hall_error", 1);
+    debug_torque_pub_l_ = this->create_publisher<bitbots_msgs::msg::FloatStamped>("/debug/l_torque", 1);
+    debug_command_pub_l_ = this->create_publisher<bitbots_msgs::msg::FloatStamped>("/debug/l_command", 1);
     debug_pub_r_ = this->create_publisher<bitbots_msgs::msg::FloatStamped>("/debug/r_hall_error", 1);
+    debug_torque_pub_r_ = this->create_publisher<bitbots_msgs::msg::FloatStamped>("/debug/r_torque", 1);
+    debug_command_pub_r_ = this->create_publisher<bitbots_msgs::msg::FloatStamped>("/debug/r_command", 1);
   }
 
   void SeaCorrectionHelper::hallLCb(const bitbots_msgs::msg::FloatStamped &msg) {
@@ -53,6 +57,20 @@ namespace deep_sea {
 
   void SeaCorrectionHelper::commandCb(bitbots_msgs::msg::JointCommand msg) {
     latched_command_ = msg;
+    for(unsigned int i = 0; i < msg.joint_names.size(); i++) {
+      if (msg.joint_names[i] == "LKnee") {
+        bitbots_msgs::msg::FloatStamped debug_msg;
+        debug_msg.header.stamp = this->get_clock()->now();
+        debug_msg.value = msg.positions[i];
+        debug_command_pub_l_->publish(debug_msg);
+      }
+      else if (msg.joint_names[i] == "RKnee") {
+        bitbots_msgs::msg::FloatStamped debug_msg;
+        debug_msg.header.stamp = this->get_clock()->now();
+        debug_msg.value = msg.positions[i];
+        debug_command_pub_r_->publish(debug_msg);
+      }
+    }
   }
 
   void SeaCorrectionHelper::stateCb(const sensor_msgs::msg::JointState &msg) {
@@ -67,6 +85,20 @@ namespace deep_sea {
       std::vector<double> accs(msg.name.size(), -1.0);
       out.accelerations = accs;
       out.max_currents = msg.effort;
+    }
+    for (unsigned int i = 0; i < msg.name.size(); i++) {
+      if(msg.name[i] == "LKnee") {
+        bitbots_msgs::msg::FloatStamped torque_msg;
+        torque_msg.header.stamp = this->get_clock()->now();
+        torque_msg.value = (hall_l_ - msg.position[i]) * 9.10564334645581; // Spring constant
+        debug_torque_pub_l_->publish(torque_msg);
+      }
+      else if(msg.name[i] == "RKnee") {
+        bitbots_msgs::msg::FloatStamped torque_msg;
+        torque_msg.header.stamp = this->get_clock()->now();
+        torque_msg.value = (hall_r_ - msg.position[i]) * 9.10564334645581; // Spring constant
+        debug_torque_pub_l_->publish(torque_msg);
+      }
     }
     for (unsigned int i = 0; i < out.joint_names.size(); i++) {
       if (out.joint_names[i] == "LKnee") {

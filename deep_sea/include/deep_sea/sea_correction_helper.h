@@ -38,6 +38,10 @@ namespace deep_sea {
     rclcpp::Publisher<bitbots_msgs::msg::JointCommand>::SharedPtr pub_;
     rclcpp::Publisher<bitbots_msgs::msg::FloatStamped>::SharedPtr debug_pub_l_;
     rclcpp::Publisher<bitbots_msgs::msg::FloatStamped>::SharedPtr debug_pub_r_;
+    rclcpp::Publisher<bitbots_msgs::msg::FloatStamped>::SharedPtr debug_torque_pub_l_;
+    rclcpp::Publisher<bitbots_msgs::msg::FloatStamped>::SharedPtr debug_torque_pub_r_;
+    rclcpp::Publisher<bitbots_msgs::msg::FloatStamped>::SharedPtr debug_command_pub_l_;
+    rclcpp::Publisher<bitbots_msgs::msg::FloatStamped>::SharedPtr debug_command_pub_r_;
 
     bitbots_msgs::msg::JointCommand latched_command_;
   };
