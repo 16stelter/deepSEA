@@ -6,7 +6,7 @@ import numpy as np
 import ast
 
 class SeaDataset(Dataset):
-    def __init__(self, filename, hall=True, vel=False, imu=False, fp=False, eff=False, forcecontrol=False, use_poserr=False):
+    def __init__(self, filename, hall=True, vel=False, imu=False, fp=False, eff=False, forcecontrol=False, hist_len=0, use_poserr=False):
         self.data = pd.read_csv(filename)
         self.hall = hall
         self.vel = vel
@@ -15,6 +15,7 @@ class SeaDataset(Dataset):
         self.eff = eff
         self.forcecontrol = forcecontrol
         self.use_poserr = use_poserr
+        self.hist_len = hist_len
 
     def __getitem__(self, idx):
         # we can assume both joints are the same. thus we have twice the amount of samples.
@@ -26,8 +27,12 @@ class SeaDataset(Dataset):
 
         x = self.data.iloc[idx+1, 2+offset]  # target position
         x = np.append(x, self.data.iloc[idx, 1+offset])  # current motor position
+        for i in range(self.hist_len):
+            x = np.append(x, self.data.iloc[idx-i, 1+offset])  # motor pos history
         if self.hall:
             x = np.append(x, self.data.iloc[idx, 2+offset])  # hall position current
+            for i in range(self.hist_len):
+                x = np.append(x, self.data.iloc[idx-i, 2+offset])  # hall pos history
         if self.use_poserr:
             if not self.hall:
                 x = np.append(x, self.data.iloc[idx, 2+offset])

@@ -21,8 +21,8 @@ model = None
 use_hall, use_vel, use_imu, use_fp, use_eff = True, True, True, True, True
 
 argumentList = sys.argv[1:]
-options = "hm:l:hvitfe:b:"
-long_options = "help, model:, learning-rate:, no-hall, no-vel, no-imu, no-pressure, epochs:, batch-size:"
+options = "hm:l:hvitfe:b:d:"
+long_options = "help, model:, learning-rate:, no-hall, no-vel, no-imu, no-pressure, epochs:, batch-size:, hist-len:"
 
 try:
     # Parsing argument
@@ -51,6 +51,11 @@ try:
         elif arg in ("-f", "--no-pressure"):
             input_shape -= 6
             use_fp = False
+        elif arg in ("-d", "--hist-len"):
+            input_shape += int(val)
+            if use_hall:
+                input_shape += int(val)
+            hist_len = int(val)
         elif arg in ("-m", "--model"):
             if not (use_vel or use_hall):
                 input_shape +=1
@@ -75,7 +80,7 @@ opt = optim.Adam(model.parameters(), lr=learning_rate)
 min_val_loss = np.inf
 criterion = torch.nn.MSELoss()  # RMSE
 
-ds = SeaDataset("../../data/pid_batt_d0cn.csv", hall=use_hall, vel=use_vel, eff=use_eff, imu=use_imu, fp=use_fp)
+ds = SeaDataset("../../data/pid_batt_d0cn.csv", hall=use_hall, vel=use_vel, eff=use_eff, imu=use_imu, fp=use_fp, hist_len=hist_len)
 
 
 wandb.init(project="deepsea", config={"epochs": epochs, "batch_size": batch_size, "learning_rate": learning_rate,
