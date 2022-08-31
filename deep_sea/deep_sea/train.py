@@ -106,7 +106,7 @@ for e in range(epochs):
         loss.backward()
         opt.step()
         opt.zero_grad()
-        if i % 100 == 0:
+        if i % 500 == 0:
             wandb.log({"train_loss": loss.item()})
             wandb.log({"train_r2": r2(y_pred, y)})
             wandb.log({"train_msle": msle(abs(y_pred), abs(y))})

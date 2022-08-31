@@ -26,9 +26,14 @@ class DeepSea(Node):
         self.right_foot = [0.0] * 3
         self.imu = [0.0] * 9
         self.left_hall_pos = 0.0
+        self.left_hall_hist = [0.0] * 10
         self.right_hall_pos = 0.0
+        self.right_hall_hist = [0.0] * 10
         self.left_hall_vel = 0.0
         self.right_hall_vel = 0.0
+
+        self.left_pos_hist = [0.0] * 10
+        self.right_pos_hist = [0.0] * 10
 
         self.l_previous = 0.0
         self.r_previous = 0.0
@@ -54,11 +59,13 @@ class DeepSea(Node):
                 if self.latched_command.joint_names[j] == "LKnee":
                     for i in range(len(msg.name)):
                         if msg.name[i] == "LKnee":
+                            self.left_pos_hist.append(msg.position[i] / math.pi)
+                            self.left_pos_hist.pop(0)
                             debug_msg = FloatStamped()
                             debug_msg.value = self.left_hall_pos - self.latched_command.positions[j]
                             self.debug_pub_l.publish(debug_msg)
-                            sample = [self.latched_command.positions[j] / math.pi, msg.position[i] / math.pi,
-                                      self.left_hall_pos / math.pi, msg.velocity[i], self.left_hall_vel,
+                            sample = [self.latched_command.positions[j] / math.pi, self.left_pos_hist,
+                                      self.left_hall_hist, msg.velocity[i], self.left_hall_vel,
                                       msg.effort[i] / 11.7]  # normalize this
                             sample.extend(self.imu)
                             sample.extend(self.left_foot)
@@ -68,11 +75,13 @@ class DeepSea(Node):
                 elif self.latched_command.joint_names[j] == "RKnee":
                     for i in range(len(msg.name)):
                         if msg.name[i] == "RKnee":
+                            self.right_pos_hist.append(msg.position[i] / math.pi)
+                            self.right_pos_hist.pop(0)
                             debug_msg = FloatStamped()
                             debug_msg.value = self.right_hall_pos - self.latched_command.positions[j]
                             self.debug_pub_r.publish(debug_msg)
-                            sample = [self.latched_command.positions[j] / math.pi, msg.position[i] / math.pi,
-                                      self.right_hall_pos / math.pi, msg.velocity[i], self.right_hall_vel,
+                            sample = [self.latched_command.positions[j] / math.pi, self.right_pos_hist,
+                                      self.right_hall_hist, msg.velocity[i], self.right_hall_vel,
                                       msg.effort[i] / 11.7]  # normalize this
                             sample.extend(self.imu)
                             sample.extend(self.left_foot)
@@ -93,11 +102,15 @@ class DeepSea(Node):
 
     def l_hall_cb(self, msg):
         self.left_hall_pos = msg.value
+        self.left_hall_hist.append(self.left_hall_pos / math.pi)
+        self.left_hall_hist.pop(0)
         self.left_hall_vel = msg.value - self.l_previous
         self.l_previous = msg.value
 
     def r_hall_cb(self, msg):
         self.right_hall_pos = msg.value
+        self.right_hall_hist.append(self.right_hall_pos / math.pi)
+        self.right_hall_hist.pop(0)
         self.right_hall_vel = msg.value - self.r_previous
         self.r_previous = msg.value
 
