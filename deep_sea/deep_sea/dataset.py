@@ -26,11 +26,9 @@ class SeaDataset(Dataset):
         idx = idx//2-1
 
         x = self.data.iloc[idx+1, 2+offset]  # target position
-        x = np.append(x, self.data.iloc[idx, 1+offset])  # current motor position
         for i in range(self.hist_len):
             x = np.append(x, self.data.iloc[idx-i, 1+offset])  # motor pos history
         if self.hall:
-            x = np.append(x, self.data.iloc[idx, 2+offset])  # hall position current
             for i in range(self.hist_len):
                 x = np.append(x, self.data.iloc[idx-i, 2+offset])  # hall pos history
         if self.use_poserr:

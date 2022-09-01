@@ -40,10 +40,12 @@ namespace deep_sea {
                                     this, std::placeholders::_1));
     pub_ = this->create_publisher<bitbots_msgs::msg::JointCommand>("/DynamixelController/corrected", 1);
     debug_pub_l_ = this->create_publisher<bitbots_msgs::msg::FloatStamped>("/debug/l_hall_error", 1);
-    debug_torque_pub_l_ = this->create_publisher<bitbots_msgs::msg::FloatStamped>("/debug/l_torque", 1);
+    debug_torque_pub_l_ = this->create_publisher<bitbots_msgs::msg::FloatStamped>("/debug/l_hall_torque", 1);
+    debug_motor_torque_pub_l_ = this->create_publisher<bitbots_msgs::msg::FloatStamped>("/debug/l_motor_torque", 1);
     debug_command_pub_l_ = this->create_publisher<bitbots_msgs::msg::FloatStamped>("/debug/l_command", 1);
     debug_pub_r_ = this->create_publisher<bitbots_msgs::msg::FloatStamped>("/debug/r_hall_error", 1);
-    debug_torque_pub_r_ = this->create_publisher<bitbots_msgs::msg::FloatStamped>("/debug/r_torque", 1);
+    debug_torque_pub_r_ = this->create_publisher<bitbots_msgs::msg::FloatStamped>("/debug/r_hall_torque", 1);
+    debug_motor_torque_pub_r_ = this->create_publisher<bitbots_msgs::msg::FloatStamped>("/debug/r_motor_torque", 1);
     debug_command_pub_r_ = this->create_publisher<bitbots_msgs::msg::FloatStamped>("/debug/r_command", 1);
   }
 
@@ -92,12 +94,20 @@ namespace deep_sea {
         torque_msg.header.stamp = this->get_clock()->now();
         torque_msg.value = (hall_l_ - msg.position[i]) * 9.10564334645581; // Spring constant
         debug_torque_pub_l_->publish(torque_msg);
+        bitbots_msgs::msg::FloatStamped debug_msg;
+        debug_msg.header.stamp = this->get_clock()->now();
+        debug_msg.value = msg.effort[i];
+        debug_motor_torque_pub_l_->publish(debug_msg);
       }
       else if(msg.name[i] == "RKnee") {
         bitbots_msgs::msg::FloatStamped torque_msg;
         torque_msg.header.stamp = this->get_clock()->now();
-        torque_msg.value = (hall_r_ - msg.position[i]) * 9.10564334645581; // Spring constant
-        debug_torque_pub_l_->publish(torque_msg);
+        torque_msg.value = (hall_r_ - msg.position[i]) * -9.10564334645581; // Spring constant
+        debug_torque_pub_r_->publish(torque_msg);
+        bitbots_msgs::msg::FloatStamped debug_msg;
+        debug_msg.header.stamp = this->get_clock()->now();
+        debug_msg.value = msg.effort[i];
+        debug_motor_torque_pub_r_->publish(debug_msg);
       }
     }
     for (unsigned int i = 0; i < out.joint_names.size(); i++) {
