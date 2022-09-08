@@ -25,7 +25,7 @@ class SeaDataset(Dataset):
             offset = 5
         idx = idx//2-1
 
-        x = self.data.iloc[idx+1, 2+offset]  # target position
+        x = np.asarray([self.data.iloc[idx, 2+offset]])  # target position
         for i in range(self.hist_len):
             x = np.append(x, self.data.iloc[idx-i, 1+offset])  # motor pos history
         if self.hall:
@@ -50,7 +50,7 @@ class SeaDataset(Dataset):
         if self.forcecontrol:
             y = np.array(self.data.iloc[idx, 5+offset])
         else:
-            y = np.array(self.data.iloc[idx+1, 1+offset])
+            y = np.array(self.data.iloc[idx, 1+offset])
 
         return torch.from_numpy(x).float(), torch.from_numpy(y).float()
 

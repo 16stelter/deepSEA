@@ -15,8 +15,10 @@ import wandb
 learning_rate = 0.01
 batch_size = 32
 epochs = 100
-input_shape = 21
+input_shape = 20
 model = None
+
+DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 use_hall, use_vel, use_imu, use_fp, use_eff = True, True, True, True, True
 
@@ -60,9 +62,9 @@ try:
             if not (use_vel or use_hall):
                 input_shape +=1
             if val == "mlp":
-                model = simplemlp.SimpleMlp(input_shape)
+                model = simplemlp.SimpleMlp(input_shape).to(DEVICE)
             elif val == "siam":
-                model = siam.SiamNN(input_shape)
+                model = siam.SiamNN(input_shape).to(DEVICE)
             else:
                 print("Model type not known. Valid models are: 'mlp', 'siam'.")
                 raise ValueError
@@ -80,7 +82,7 @@ opt = optim.Adam(model.parameters(), lr=learning_rate)
 min_val_loss = np.inf
 criterion = torch.nn.MSELoss()  # RMSE
 
-ds = SeaDataset("../../data/pid_batt_d0cn.csv", hall=use_hall, vel=use_vel, eff=use_eff, imu=use_imu, fp=use_fp, hist_len=hist_len)
+ds = SeaDataset("../../data/d0freecn.csv", hall=use_hall, vel=use_vel, eff=use_eff, imu=use_imu, fp=use_fp, hist_len=hist_len)
 
 
 wandb.init(project="deepsea", config={"epochs": epochs, "batch_size": batch_size, "learning_rate": learning_rate,
@@ -93,16 +95,17 @@ train_dataset, test_dataset = torch.utils.data.random_split(ds, [train_size, tes
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
 
-r2 = R2Score()
-msle = MeanSquaredLogError()
+r2 = R2Score().to(DEVICE)
+msle = MeanSquaredLogError().to(DEVICE)
 
 no_impr_count = 0
 for e in range(epochs):
     model.train()
     for i, (x, y) in enumerate(tqdm(train_loader)):
-        y = y.unsqueeze(1)
+        y = y.unsqueeze(1).to(DEVICE)
+        x = x.to(DEVICE)
         y_pred = model(x)
-        loss = torch.sqrt(criterion(y_pred, y))
+        loss = criterion(y_pred, y)
         loss.backward()
         opt.step()
         opt.zero_grad()
@@ -115,9 +118,10 @@ for e in range(epochs):
     val_r2 = 0
     val_msle = 0
     for step, (x, y) in enumerate(tqdm(test_loader)):
-        y = y.unsqueeze(1)
+        y = y.unsqueeze(1).to(DEVICE)
+        x = x.to(DEVICE)
         pred = model.forward(x)
-        val_loss += torch.sqrt(criterion(pred, y)).item()
+        val_loss += criterion(pred, y).item()
         val_r2 += r2(pred, y)
         val_msle += msle(abs(pred), abs(y))
     val_loss = val_loss / len(test_loader)
@@ -133,8 +137,9 @@ for e in range(epochs):
     wandb.log({"val_msle": val_msle})
     print("Validation. Epoch: {}, val_loss: {}".format(e, val_loss))
     wandb.watch(model)
-    if no_impr_count > 10:
+    if no_impr_count > 100:
         print("Early stopping")
         torch.save(model.state_dict(), "checkpoints/p_{}_{}.pt".format(model.__class__.__name__, e))
         break
+
 
