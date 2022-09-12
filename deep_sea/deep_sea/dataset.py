@@ -50,7 +50,7 @@ class SeaDataset(Dataset):
         if self.forcecontrol:
             y = np.array(self.data.iloc[idx, 5+offset])
         else:
-            y = np.array(self.data.iloc[idx, 1+offset])
+            y = np.array(self.data.iloc[idx+1, 1+offset])
 
         return torch.from_numpy(x).float(), torch.from_numpy(y).float()
 
