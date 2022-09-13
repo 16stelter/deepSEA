@@ -18,6 +18,7 @@ epochs = 100
 input_shape = 20
 model = None
 
+
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 use_hall, use_vel, use_imu, use_fp, use_eff = True, True, True, True, True
@@ -61,7 +62,7 @@ try:
         elif arg in ("-m", "--model"):
             modelname = val
             if not (use_vel or use_hall):
-                input_shape +=1
+                input_shape += 1
             if val == "mlp":
                 model = simplemlp.SimpleMlp(input_shape).to(DEVICE)
                 ds = SeaDataset("../../data/ground_with_support/datasetcn.csv", siam=False, hall=use_hall, vel=use_vel, eff=use_eff, imu=use_imu, fp=use_fp, hist_len=hist_len)
@@ -118,7 +119,7 @@ for e in range(epochs):
         opt.zero_grad()
         if i % 500 == 0:
             wandb.log({"train_loss": loss.item()})
-            #wandb.log({"train_r2": r2(y_pred, target)})
+            # wandb.log({"train_r2": r2(y_pred, target)})
             wandb.log({"train_msle": msle(abs(y_pred), abs(target))})
     model.eval()
     val_loss = 0
@@ -136,7 +137,7 @@ for e in range(epochs):
             pred = model(x, x1, y)
             target = torch.cat((x1, y), dim=1)
         val_loss += criterion(pred, target).item()
-        #val_r2 += r2(pred, target)
+        # val_r2 += r2(pred, target)
         val_msle += msle(abs(pred), abs(target))
     val_loss = val_loss / len(test_loader)
     val_r2 = val_r2 / len(test_loader)
@@ -147,10 +148,10 @@ for e in range(epochs):
         torch.save(model.state_dict(), "checkpoints/p_{}_{}.pt".format(model.__class__.__name__, e))
         no_impr_count = 0
     wandb.log({"val_loss": val_loss})
-    #wandb.log({"val_r2": val_r2})
+    # wandb.log({"val_r2": val_r2})
     wandb.log({"val_msle": val_msle})
     print("Validation. Epoch: {}, val_loss: {}".format(e, val_loss))
-    wandb.watch(model, log_freq=100)
+    #wandb.watch(model, log_freq=100)
     if no_impr_count > 100:
         print("Early stopping")
         torch.save(model.state_dict(), "checkpoints/p_{}_{}.pt".format(model.__class__.__name__, e))
