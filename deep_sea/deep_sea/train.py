@@ -59,12 +59,15 @@ try:
                 input_shape += int(val)
             hist_len = int(val)
         elif arg in ("-m", "--model"):
+            modelname = val
             if not (use_vel or use_hall):
                 input_shape +=1
             if val == "mlp":
                 model = simplemlp.SimpleMlp(input_shape).to(DEVICE)
+                ds = SeaDataset("../../data/ground_with_support/datasetcn.csv", siam=False, hall=use_hall, vel=use_vel, eff=use_eff, imu=use_imu, fp=use_fp, hist_len=hist_len)
             elif val == "siam":
                 model = siam.SiamNN(input_shape).to(DEVICE)
+                ds = SeaDataset("../../data/ground_with_support/datasetcn.csv", siam=True, hall=use_hall, vel=use_vel, eff=use_eff, imu=use_imu, fp=use_fp, hist_len=hist_len)
             else:
                 print("Model type not known. Valid models are: 'mlp', 'siam'.")
                 raise ValueError
@@ -82,9 +85,6 @@ opt = optim.Adam(model.parameters(), lr=learning_rate)
 min_val_loss = np.inf
 criterion = torch.nn.MSELoss()  # RMSE
 
-ds = SeaDataset("../../data/d0freecn.csv", hall=use_hall, vel=use_vel, eff=use_eff, imu=use_imu, fp=use_fp, hist_len=hist_len)
-
-
 wandb.init(project="deepsea", config={"epochs": epochs, "batch_size": batch_size, "learning_rate": learning_rate,
                                       "use_hall": use_hall, "use_vel": use_vel, "use_imu": use_imu, "use_fp": use_fp,
                                       "model": model.__class__.__name__})
@@ -101,29 +101,43 @@ msle = MeanSquaredLogError().to(DEVICE)
 no_impr_count = 0
 for e in range(epochs):
     model.train()
-    for i, (x, y) in enumerate(tqdm(train_loader)):
-        y = y.unsqueeze(1).to(DEVICE)
-        x = x.to(DEVICE)
-        y_pred = model(x)
-        loss = criterion(y_pred, y)
+    for i, s in enumerate(tqdm(train_loader)):
+        x = s[0].to(DEVICE)
+        if modelname == "mlp":
+            y = s[1].unsqueeze(1).to(DEVICE)
+            y_pred = model(x)
+            target = y
+        elif modelname == "siam":
+            x1 = s[1].to(DEVICE)
+            y = s[2].unsqueeze(1).to(DEVICE)
+            y_pred = model(x, x1, y)
+            target = torch.cat((x1, y), dim=1)
+        loss = criterion(y_pred, target)
         loss.backward()
         opt.step()
         opt.zero_grad()
         if i % 500 == 0:
             wandb.log({"train_loss": loss.item()})
-            wandb.log({"train_r2": r2(y_pred, y)})
-            wandb.log({"train_msle": msle(abs(y_pred), abs(y))})
+            #wandb.log({"train_r2": r2(y_pred, target)})
+            wandb.log({"train_msle": msle(abs(y_pred), abs(target))})
     model.eval()
     val_loss = 0
     val_r2 = 0
     val_msle = 0
-    for step, (x, y) in enumerate(tqdm(test_loader)):
-        y = y.unsqueeze(1).to(DEVICE)
-        x = x.to(DEVICE)
-        pred = model.forward(x)
-        val_loss += criterion(pred, y).item()
-        val_r2 += r2(pred, y)
-        val_msle += msle(abs(pred), abs(y))
+    for step, s in enumerate(tqdm(test_loader)):
+        x = s[0].to(DEVICE)
+        if modelname == "mlp":
+            y = s[1].unsqueeze(1).to(DEVICE)
+            pred = model(x)
+            target = y
+        elif modelname == "siam":
+            x1 = s[1].to(DEVICE)
+            y = s[2].unsqueeze(1).to(DEVICE)
+            pred = model(x, x1, y)
+            target = torch.cat((x1, y), dim=1)
+        val_loss += criterion(pred, target).item()
+        #val_r2 += r2(pred, target)
+        val_msle += msle(abs(pred), abs(target))
     val_loss = val_loss / len(test_loader)
     val_r2 = val_r2 / len(test_loader)
     val_msle = val_msle / len(test_loader)
@@ -133,10 +147,10 @@ for e in range(epochs):
         torch.save(model.state_dict(), "checkpoints/p_{}_{}.pt".format(model.__class__.__name__, e))
         no_impr_count = 0
     wandb.log({"val_loss": val_loss})
-    wandb.log({"val_r2": val_r2})
+    #wandb.log({"val_r2": val_r2})
     wandb.log({"val_msle": val_msle})
     print("Validation. Epoch: {}, val_loss: {}".format(e, val_loss))
-    wandb.watch(model)
+    wandb.watch(model, log_freq=100)
     if no_impr_count > 100:
         print("Early stopping")
         torch.save(model.state_dict(), "checkpoints/p_{}_{}.pt".format(model.__class__.__name__, e))

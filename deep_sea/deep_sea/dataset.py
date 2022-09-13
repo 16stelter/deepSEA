@@ -5,8 +5,9 @@ from torch.utils.data import Dataset
 import numpy as np
 import ast
 
+
 class SeaDataset(Dataset):
-    def __init__(self, filename, hall=True, vel=False, imu=False, fp=False, eff=False, forcecontrol=False, hist_len=0, use_poserr=False):
+    def __init__(self, filename, siam=False, hall=True, vel=False, imu=False, fp=False, eff=False, forcecontrol=False, hist_len=0, use_poserr=False):
         self.data = pd.read_csv(filename)
         self.hall = hall
         self.vel = vel
@@ -16,6 +17,7 @@ class SeaDataset(Dataset):
         self.forcecontrol = forcecontrol
         self.use_poserr = use_poserr
         self.hist_len = hist_len
+        self.siam = siam
 
     def __getitem__(self, idx):
         # we can assume both joints are the same. thus we have twice the amount of samples.
@@ -25,6 +27,21 @@ class SeaDataset(Dataset):
             offset = 5
         idx = idx//2-1
 
+        x = self.get_x(idx, offset)
+
+        if self.siam:
+            x1 = self.get_x(idx+1, offset)
+
+        if self.forcecontrol:
+            y = np.array(self.data.iloc[idx, 5+offset])
+        else:
+            y = np.array(self.data.iloc[idx+1, 1+offset])
+
+        if self.siam:
+            return torch.from_numpy(x).float(), torch.from_numpy(x1).float(), torch.from_numpy(y).float()
+        return torch.from_numpy(x).float(), torch.from_numpy(y).float()
+
+    def get_x(self, idx, offset):
         x = np.asarray([self.data.iloc[idx, 2+offset]])  # target position
         for i in range(self.hist_len):
             x = np.append(x, self.data.iloc[idx-i, 1+offset])  # motor pos history
@@ -47,12 +64,8 @@ class SeaDataset(Dataset):
         if self.fp:
             x = np.concatenate((x, np.asarray(ast.literal_eval(self.data.iloc[idx, 12]))), axis=0)  # left foot
             x = np.concatenate((x, np.asarray(ast.literal_eval(self.data.iloc[idx, 13]))), axis=0)  # right foot
-        if self.forcecontrol:
-            y = np.array(self.data.iloc[idx, 5+offset])
-        else:
-            y = np.array(self.data.iloc[idx+1, 1+offset])
 
-        return torch.from_numpy(x).float(), torch.from_numpy(y).float()
+        return x
 
     def __len__(self):
         return len(self.data) * 2

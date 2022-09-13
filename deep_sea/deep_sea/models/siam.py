@@ -1,9 +1,6 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import numpy as np
-from torch import optim
-
 
 class SiamNN(nn.Module):
     def __init__(self, input_shape):
@@ -13,26 +10,26 @@ class SiamNN(nn.Module):
         self.s_dense3 = nn.Linear(64, 64)
         self.s_out = nn.Linear(64, 64)
 
-        self.pred_xt1 = nn.Linear(64, input_shape)
-        self.pred_ut = nn.Linear(64, 1)
+        self.pred_xt1 = nn.Linear(65, input_shape)
+        self.pred_ut = nn.Linear(128, 1)
 
     def forward(self, xt, xt1, ut):
         latent_xt = self.sister_forward(xt)
         latent_xt1 = self.sister_forward(xt1)
 
-        pxt1 = self.pred_xt1(torch.cat((latent_xt, ut)))
-        put = self.pred_ut(torch.cat((latent_xt, latent_xt1)))
+        pxt1 = self.pred_xt1(torch.cat((latent_xt, ut), dim=1))
+        put = self.pred_ut(torch.cat((latent_xt, latent_xt1), dim=1))
 
-        return torch.cat((pxt1, put))
+        return torch.cat((pxt1, put), dim=1)
 
     def predict_ut(self, xt, xt1):
         latent_xt = self.sister_forward(xt)
         latent_xt1 = self.sister_forward(xt1)
-        return self.pred_ut(torch.cat((latent_xt, latent_xt1)))
+        return self.pred_ut(torch.cat((latent_xt, latent_xt1), dim=1))
 
     def predict_xt1(self, xt, ut):
         latent_xt = self.sister_forward(xt)
-        return self.pred_xt1(torch.cat((latent_xt, ut)))
+        return self.pred_xt1(torch.cat((latent_xt, ut), dim=1))
 
     def sister_forward(self, x):
         x = self.s_dense1(x)
@@ -41,7 +38,7 @@ class SiamNN(nn.Module):
         x = F.relu(x)
         x = self.s_dense3(x)
         x = F.relu(x)
-        x = self.s_dense1(x)
+        x = self.s_out(x)
         latent = F.sigmoid(x)
 
         return latent
