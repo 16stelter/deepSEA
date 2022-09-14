@@ -65,10 +65,10 @@ try:
                 input_shape += 1
             if val == "mlp":
                 model = simplemlp.SimpleMlp(input_shape).to(DEVICE)
-                ds = SeaDataset("../../data/ground_with_support/datasetcn.csv", siam=False, hall=use_hall, vel=use_vel, eff=use_eff, imu=use_imu, fp=use_fp, hist_len=hist_len)
+                ds = SeaDataset("../../data/free/d0freecn.csv", siam=False, hall=use_hall, vel=use_vel, eff=use_eff, imu=use_imu, fp=use_fp, hist_len=hist_len)
             elif val == "siam":
                 model = siam.SiamNN(input_shape).to(DEVICE)
-                ds = SeaDataset("../../data/ground_with_support/datasetcn.csv", siam=True, hall=use_hall, vel=use_vel, eff=use_eff, imu=use_imu, fp=use_fp, hist_len=hist_len)
+                ds = SeaDataset("../../data/free/d0freecn.csv", siam=True, hall=use_hall, vel=use_vel, eff=use_eff, imu=use_imu, fp=use_fp, hist_len=hist_len)
             else:
                 print("Model type not known. Valid models are: 'mlp', 'siam'.")
                 raise ValueError
@@ -89,6 +89,8 @@ criterion = torch.nn.MSELoss()  # RMSE
 wandb.init(project="deepsea", config={"epochs": epochs, "batch_size": batch_size, "learning_rate": learning_rate,
                                       "use_hall": use_hall, "use_vel": use_vel, "use_imu": use_imu, "use_fp": use_fp,
                                       "model": model.__class__.__name__})
+
+torch.set_flush_denormal(True)
 
 train_size = int(0.8 * len(ds))
 test_size = len(ds) - train_size
@@ -151,7 +153,7 @@ for e in range(epochs):
     # wandb.log({"val_r2": val_r2})
     wandb.log({"val_msle": val_msle})
     print("Validation. Epoch: {}, val_loss: {}".format(e, val_loss))
-    #wandb.watch(model, log_freq=100)
+    # wandb.watch(model, log_freq=100)
     if no_impr_count > 100:
         print("Early stopping")
         torch.save(model.state_dict(), "checkpoints/p_{}_{}.pt".format(model.__class__.__name__, e))
