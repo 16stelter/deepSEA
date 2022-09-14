@@ -20,7 +20,7 @@ class SiamNN(nn.Module):
         pxt1 = self.pred_xt1(torch.cat((latent_xt, ut), dim=1))
         put = self.pred_ut(torch.cat((latent_xt, latent_xt1), dim=1))
 
-        return torch.cat((pxt1, put), dim=1)
+        return pxt1, put
 
     def predict_ut(self, xt, xt1):
         latent_xt = self.sister_forward(xt)
