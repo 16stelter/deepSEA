@@ -113,7 +113,7 @@ class Evaluator(Node):
             goal.direction = "front"
             self.recording = True
             future = self.dynup_action_client.send_goal_async(goal)
-            rclpy.spin_until_future_complete(self.dynup_action_client, future)
+            rclpy.spin_until_future_complete(self, future)
             goal_handle = future.result()
             result_future = goal_handle.get_result_async()
             rclpy.spin_until_future_complete(self, result_future)
@@ -127,7 +127,7 @@ class Evaluator(Node):
             goal.direction = "back"
             self.recording = True
             future = self.dynup_action_client.send_goal_async(goal)
-            rclpy.spin_until_future_complete(self.dynup_action_client, future)
+            rclpy.spin_until_future_complete(self, future)
             goal_handle = future.result()
             result_future = goal_handle.get_result_async()
             rclpy.spin_until_future_complete(self, result_future)

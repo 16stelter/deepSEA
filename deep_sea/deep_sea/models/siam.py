@@ -25,11 +25,11 @@ class SiamNN(nn.Module):
     def predict_ut(self, xt, xt1):
         latent_xt = self.sister_forward(xt)
         latent_xt1 = self.sister_forward(xt1)
-        return self.pred_ut(torch.cat((latent_xt, latent_xt1), dim=1))
+        return self.pred_ut(torch.cat((latent_xt, latent_xt1), dim=0))
 
     def predict_xt1(self, xt, ut):
         latent_xt = self.sister_forward(xt)
-        return self.pred_xt1(torch.cat((latent_xt, ut), dim=1))
+        return self.pred_xt1(torch.cat((latent_xt, ut), dim=0))
 
     def sister_forward(self, x):
         x = self.s_dense1(x)
