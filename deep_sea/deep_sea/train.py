@@ -65,10 +65,10 @@ try:
                 input_shape += 1
             if val == "mlp":
                 model = simplemlp.SimpleMlp(input_shape).to(DEVICE)
-                ds = SeaDataset("../../data/free/d0freecn.csv", siam=False, hall=use_hall, vel=use_vel, eff=use_eff, imu=use_imu, fp=use_fp, hist_len=hist_len)
+                ds = SeaDataset("../../data/ground_with_support/datasetcn.csv", siam=False, hall=use_hall, vel=use_vel, eff=use_eff, imu=use_imu, fp=use_fp, hist_len=hist_len)
             elif val == "siam":
                 model = siam.SiamNN(input_shape).to(DEVICE)
-                ds = SeaDataset("../../data/free/d0freecn.csv", siam=True, hall=use_hall, vel=use_vel, eff=use_eff, imu=use_imu, fp=use_fp, hist_len=hist_len)
+                ds = SeaDataset("../../data/ground_with_support/datasetcn.csv", siam=True, hall=use_hall, vel=use_vel, eff=use_eff, imu=use_imu, fp=use_fp, hist_len=hist_len)
             else:
                 print("Model type not known. Valid models are: 'mlp', 'siam'.")
                 raise ValueError
@@ -122,10 +122,10 @@ for e in range(epochs):
         opt.zero_grad()
         if i % 500 == 0:
             wandb.log({"train_loss": loss.item()})
-            wandb.log({"train_y_loss": y_loss.item()})
-            wandb.log({"train_x1_loss": x1_loss.item()})
-            # wandb.log({"train_r2": r2(y_pred, target)})
-            # wandb.log({"train_msle": msle(abs(y_pred), abs(target))})
+            #wandb.log({"train_y_loss": y_loss.item()})
+            #wandb.log({"train_x1_loss": x1_loss.item()})
+            wandb.log({"train_r2": r2(y_pred, y)})
+            wandb.log({"train_msle": msle(abs(y_pred), abs(y))})
     model.eval()
     val_loss = 0
     val_r2 = 0
@@ -134,8 +134,7 @@ for e in range(epochs):
         x = s[0].to(DEVICE)
         if modelname == "mlp":
             y = s[1].unsqueeze(1).to(DEVICE)
-            pred = model(x)
-            target = y
+            y_pred = model(x)
             val_loss += criterion(y_pred, y)
         elif modelname == "siam":
             x1 = s[1].to(DEVICE)
@@ -144,24 +143,24 @@ for e in range(epochs):
             y_loss = criterion(y_pred, y)
             x1_loss = criterion(x1_pred, x1)
             val_loss += y_loss + 0.1 * x1_loss
-        # val_r2 += r2(pred, target)
-        # val_msle += msle(abs(pred), abs(target))
+        val_r2 += r2(y_pred, y)
+        val_msle += msle(abs(y_pred), abs(y))
     val_loss = val_loss / len(test_loader)
     val_r2 = val_r2 / len(test_loader)
     val_msle = val_msle / len(test_loader)
     no_impr_count += 1 if val_loss > min_val_loss else 0
     if val_loss < min_val_loss:
         min_val_loss = val_loss
-        torch.save(model.state_dict(), "checkpoints/p_{}_{}.pt".format(model.__class__.__name__, e))
+        torch.save(model.state_dict(), "checkpoints/f_{}_{}.pt".format(model.__class__.__name__, e))
         no_impr_count = 0
     wandb.log({"val_loss": val_loss})
-    # wandb.log({"val_r2": val_r2})
-    # wandb.log({"val_msle": val_msle})
+    wandb.log({"val_r2": val_r2})
+    wandb.log({"val_msle": val_msle})
     print("Validation. Epoch: {}, val_loss: {}".format(e, val_loss))
     # wandb.watch(model, log_freq=100)
     if no_impr_count > 100:
         print("Early stopping")
-        torch.save(model.state_dict(), "checkpoints/p_{}_{}.pt".format(model.__class__.__name__, e))
+        torch.save(model.state_dict(), "checkpoints/f_{}_{}.pt".format(model.__class__.__name__, e))
         break
 
 
