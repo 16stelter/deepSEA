@@ -4,8 +4,7 @@ import time
 
 import rclpy
 from rclpy.node import Node
-from sensor_msgs.msg import Imu, JointState
-from bitbots_msgs.msg import FootPressure, FloatStamped, JointCommand
+from bitbots_msgs.msg import FloatStamped
 from geometry_msgs.msg import Twist
 from rclpy.action import ActionClient
 from bitbots_msgs.action import Dynup
