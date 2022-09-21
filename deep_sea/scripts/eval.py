@@ -66,7 +66,7 @@ class Evaluator(Node):
                 self.r_err_count_pos += 1
             elif msg.value < 0:
                 if msg.value < self.l_err_peak_neg:
-                    self.l_err_peak_neg = msg.value
+                    self.r_err_peak_neg = msg.value
                 self.r_err_sum_neg += msg.value
                 self.r_err_count_neg += 1
             self.r_err_count += 1

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import seaborn as sns
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -67,9 +68,9 @@ sns.set_context('paper')
 sns.set_palette('colorblind')
 
 fig, ax = plt.subplots()
-sns.regplot(x='beams', y='rf', data=df4, ci=None, order=1, label="4 mm")
-sns.regplot(x='beams', y='rf', data=df6, ci=None, order=2, label="6 mm")
-sns.regplot(x='beams', y='rf', data=df8, ci=None, order=2, label="8 mm")
+sns.scatterplot(x='beams', y='rf', data=df4, label="4 mm")
+sns.scatterplot(x='beams', y='rf', data=df6, label="6 mm")
+sns.scatterplot(x='beams', y='rf', data=df8, label="8 mm")
 plt.legend()
 plt.show()
 
