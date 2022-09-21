@@ -5,6 +5,7 @@ import rclpy
 import torch
 from rclpy.node import Node
 from deep_sea.models.simplemlp import SimpleMlp
+from deep_sea.ogma import Ogma
 from sensor_msgs.msg import Imu, JointState
 from bitbots_msgs.msg import FootPressure, FloatStamped, JointCommand
 
@@ -19,6 +20,8 @@ class DeepSea(Node):
             checkpoint = torch.load("checkpoints/SimpleMlp_407.pt")
             self.model.eval()
             self.model.load_state_dict(checkpoint)
+        elif self.model_type == "ogma":
+            self.model = Ogma("./hierarchy")
         else:
             raise Exception("Unknown model type")
 
@@ -56,7 +59,7 @@ class DeepSea(Node):
         self.debug_motor_torque_pub_l = self.create_publisher(FloatStamped, "/debug/l_motor_torque", 1)
 
 
-def command_cb(self, msg):
+    def command_cb(self, msg):
         self.latched_command = msg
         for i in range(len(msg.joint_names)):
             if msg.joint_names[i] == "LKnee":

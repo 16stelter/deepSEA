@@ -45,8 +45,7 @@ class Ogma:
             self.y_pred = 0.0
             self.train_loop()
         else:
-            self.h.initFromFile(mode)  
-            self.loop()
+            self.h.initFromFile(mode)
 
     def action2motorgoal(self, position,  action):
         return position + action * (0.5 / self.res) - 0.5
@@ -64,10 +63,12 @@ class Ogma:
             print(rsum / len(self.dl))
             self.h.saveToFile("./hierarchy")
         
-
-    def loop(self):
-        return  
-    
+    def forward(self, sample):
+        csdr = self.se.encode(sample)
+        self.h.step([csdr, [self.action]], False)
+        self.action = self.h.getPredictionCIs(1)[0]
+        self.y_pred = self.action2motorgoal(sample[0], self.action)
+        return self.y_pred
 
 
 '''
