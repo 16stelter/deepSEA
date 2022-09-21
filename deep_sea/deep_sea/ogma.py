@@ -1,3 +1,4 @@
+from cmath import inf
 import math
 import pyaogmaneo as neo
 import numpy as np
@@ -33,16 +34,24 @@ class Ogma:
         self.h = neo.Hierarchy()
         if mode == "train":
             ds = SeaDataset("../../data/ground_with_support/datasetc.csv", hall=False)
-            self.dl = DataLoader(ds, batch_size=1, shuffle=False)
+            train_size = int(0.8 * len(ds))
+            test_size = len(ds) - train_size
+            train_dataset, test_dataset = torch.utils.data.random_split(ds, [train_size, test_size])
+            self.train_loader = DataLoader(train_dataset, batch_size=1, shuffle=False)
+            self.test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False)
+
             self.h.initRandom([ neo.IODesc((3, 3, self.res), neo.none, eRadius=2, dRadius=2), neo.IODesc((1, 1, self.res), neo.action, eRadius=0, dRadius=2, historyCapacity=64) ], self.lds)
             self.h.setAVLR(1, 0.01)
             self.h.setAALR(1, 0.01)
             self.h.setADiscount(1, 0.99)
             self.h.setAMinSteps(1, 16)
             self.h.setAHistoryIters(1, 16)
+
             self.action = 0
             self.reward = 0.0
             self.y_pred = 0.0
+            self.best_val = -inf
+
             self.train_loop()
         else:
             self.h.initFromFile(mode)
@@ -51,17 +60,33 @@ class Ogma:
         return position + action * (0.5 / self.res) - 0.5
 
     def train_loop(self):
+        no_impr_count = 0
         for e in range(self.epochs):
             rsum = 0.0
-            for i, s in enumerate(tqdm(self.dl)):
+            val_reward = 0.0
+            for i, s in enumerate(tqdm(self.train_loader)):
                 csdr = self.se.encode(sigmoid(np.matrix(s[0]).T * 4.0))
                 self.h.step([ csdr, [ self.action ] ], True, self.reward)
                 self.action = self.h.getPredictionCIs(1)[0]
                 self.y_pred = self.action2motorgoal(s[0][0], self.action)
                 self.reward = -self.criterion(torch.tensor([self.y_pred]), s[1]).item()
                 rsum += self.reward
-            print(rsum / len(self.dl))
-            self.h.saveToFile("./hierarchy")
+            print(rsum / len(self.train_loader))
+            for i, s in enumerate(tqdm(self.test_loader)):
+                csdr = self.se.encode(sigmoid(np.matrix(s[0]).T * 4.0))
+                self.h.step([ csdr, [ self.action ] ], False)
+                self.action = self.h.getPredictionCIs(1)[0]
+                self.y_pred = self.action2motorgoal(s[0][0], self.action)
+                val_reward += -self.criterion(torch.tensor([self.y_pred]), s[1]).item()
+            val_reward /= len(self.test_loader)
+            print("val reward: " + str(val_reward))
+            if val_reward > self.best_val:
+                self.best_val = val_reward
+                self.h.saveToFile("./checkpoints/hierarchy_{}".format(e))
+            else:
+                no_impr_count += 1
+            if no_impr_count > 100:
+                return
         
     def forward(self, sample):
         csdr = self.se.encode(sample)
