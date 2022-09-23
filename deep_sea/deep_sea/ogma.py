@@ -15,7 +15,7 @@ def sigmoid(x):
 
 class Ogma:
     def __init__(self, mode):
-        self.res = 65 #resolution
+        self.res = 129 #resolution
         self.se = ScalarEncoder(4, 9, self.res)
         neo.setNumThreads(8)
 
@@ -33,7 +33,7 @@ class Ogma:
 
         self.h = neo.Hierarchy()
         if mode == "train":
-            ds = SeaDataset("../../data/ground_with_support/datasetc.csv", hall=False)
+            ds = SeaDataset("../../data/ground_with_support/datasetcn.csv", hall=False)
             train_size = int(0.8 * len(ds))
             test_size = len(ds) - train_size
             train_dataset, test_dataset = torch.utils.data.random_split(ds, [train_size, test_size])
@@ -57,7 +57,7 @@ class Ogma:
             self.h.initFromFile(mode)
 
     def action2motorgoal(self, position,  action):
-        return position + action * (0.5 / self.res) - 0.5
+        return position + action * (0.2 / self.res) - 0.2
 
     def train_loop(self):
         no_impr_count = 0
@@ -80,9 +80,11 @@ class Ogma:
                 val_reward += -self.criterion(torch.tensor([self.y_pred]), s[1]).item()
             val_reward /= len(self.test_loader)
             print("val reward: " + str(val_reward))
+            print("Epoch: " + str(e))
             if val_reward > self.best_val:
                 self.best_val = val_reward
-                self.h.saveToFile("./checkpoints/hierarchy_{}".format(e))
+                self.h.saveToFile("./checkpoints/128hierarchy_{}".format(e))
+                no_impr_count = 0
             else:
                 no_impr_count += 1
             if no_impr_count > 100:
@@ -117,7 +119,7 @@ class ScalarEncoder:
         for i in range(len(self.protos)):
             acts = -np.sum(np.square(np.repeat(scalars.T, self.cells_per_column, axis=0) - self.protos[i]), axis=1)
 
-            csdr.append(np.asscalar(np.argmax(acts)))
+            csdr.append(np.argmax(acts).item())
 
         return csdr
 
