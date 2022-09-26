@@ -25,6 +25,8 @@ class Ogma:
         self.epochs = 1000
 
         self.criterion = torch.nn.MSELoss()
+        self.action = 0
+        self.y_pred = 0.0
 
         self.lds = [] # generating model
         for i in range(4):
@@ -48,9 +50,8 @@ class Ogma:
             self.h.setAMinSteps(1, 16)
             self.h.setAHistoryIters(1, 16)
 
-            self.action = 0
+            
             self.reward = 0.0
-            self.y_pred = 0.0
             self.best_val = -inf
 
             wandb.init(project="deepsea", config={"epochs": self.epochs, "model": "Ogma"})
@@ -71,7 +72,7 @@ class Ogma:
                 csdr = self.se.encode(sigmoid(np.matrix(s[0]).T * 4.0))
                 self.h.step([ csdr, [ self.action ] ], True, self.reward)
                 self.action = self.h.getPredictionCIs(1)[0]
-                self.y_pred = self.action2motorgoal(s[1][0], self.action)
+                self.y_pred = self.action2motorgoal(s[0][0][0], self.action)
                 self.reward = -self.criterion(torch.tensor([self.y_pred]), s[1]).item()
                 rsum += self.reward
             print(rsum / len(self.train_loader))
@@ -82,7 +83,7 @@ class Ogma:
                 csdr = self.se.encode(sigmoid(np.matrix(s[0]).T * 4.0))
                 self.h.step([ csdr, [ self.action ] ], False)
                 self.action = self.h.getPredictionCIs(1)[0]
-                self.y_pred = self.action2motorgoal(s[1][0], self.action)
+                self.y_pred = self.action2motorgoal(s[0][0][0], self.action)
                 val_reward += -self.criterion(torch.tensor([self.y_pred]), s[1]).item()
             val_reward /= len(self.test_loader)
             wandb.log({"val_loss": -val_reward})
@@ -100,11 +101,11 @@ class Ogma:
                 return
         
     def forward(self, sample):
-        csdr = self.se.encode(sample)
+        csdr = self.se.encode(sigmoid(np.matrix(sample).T * 4.0))
         self.h.step([csdr, [self.action]], False)
         self.action = self.h.getPredictionCIs(1)[0]
-        self.y_pred = self.action2motorgoal(sample[0], self.action)
-        return self.y_pred
+        self.y_pred = self.action2motorgoal(sample[0][0], self.action)
+        return torch.tensor([self.y_pred]).unsqueeze(0)
 
 
 '''

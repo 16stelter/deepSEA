@@ -15,6 +15,7 @@ from torch.utils.data import DataLoader
 from torchmetrics import R2Score, MeanSquaredLogError
 from torchmetrics.functional import mean_absolute_percentage_error
 from tqdm import tqdm
+from ogma import Ogma
 
 from models import simplemlp, siam
 from dataset import SeaDataset
@@ -26,15 +27,15 @@ DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 class TestEval(Node):
     def __init__(self, input_size):
         super().__init__("test_eval")
-        self.model = siam.SiamNN(1)#simplemlp.SimpleMlp(1)
-        self.modelname = "siam"
-        checkpoint = torch.load("../../checkpoints/free_hanging/p_SiamNN_2500.pt", map_location=torch.device('cpu'))
-        self.model.eval()
-        self.model.load_state_dict(checkpoint)
+        self.model = Ogma("checkpoints/128hierarchy_0")
+        self.modelname = "mlp"
+        #checkpoint = torch.load("../../checkpoints/ground/all_SimpleMlp_5146.pt", map_location=torch.device('cpu'))
+        #self.model.eval()
+        #self.model.load_state_dict(checkpoint)
 
 
         self.criterion = torch.nn.MSELoss().to(DEVICE)
-        ds = SeaDataset("../../data/free/free_dtestcn.csv", siam=True, hall=False, vel=False, eff=False, imu=False, fp=False, hist_len=0)
+        ds = SeaDataset("../../data/ground_with_support/ground_dtestcn.csv", siam=False, hall=False, vel=True, eff=True, imu=False, fp=False, hist_len=0)
         self.dl = DataLoader(ds, batch_size=1, shuffle=False)
 
 
@@ -54,7 +55,7 @@ class TestEval(Node):
             x = s[0].to(DEVICE)
             if self.modelname == "mlp":
                 y = s[1].unsqueeze(1).to(DEVICE)
-                y_pred = self.model(x)
+                y_pred = self.model.forward(x)
                 if step % 2 == 0:
                     msg = Float64MultiArray()
                     msg.data = [i * math.pi for i in x.tolist()[0]]
@@ -94,7 +95,8 @@ class TestEval(Node):
                 self.val_preds = torch.cat((self.val_preds, y_pred))
         self.val_loss = self.val_loss / len(self.dl)
         #self.val_r2 = self.val_r2 / len(self.dl)
-        print(self.val_preds)
+        print(self.val_preds.shape)
+        print(self.val_targets.shape)
         mape= mean_absolute_percentage_error(self.val_preds, self.val_targets)
 
         print("MAPE: " + str(mape.item()))
