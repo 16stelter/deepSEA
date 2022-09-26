@@ -7,6 +7,7 @@ from tqdm import tqdm
 from torch.utils.data import DataLoader
 import getopt, sys
 import torch
+import wandb
 
 
 # helper function for squashing
@@ -16,7 +17,7 @@ def sigmoid(x):
 class Ogma:
     def __init__(self, mode):
         self.res = 129 #resolution
-        self.se = ScalarEncoder(4, 9, self.res)
+        self.se = ScalarEncoder(3, 9, self.res)
         neo.setNumThreads(8)
 
         self.input_size = 1
@@ -33,7 +34,7 @@ class Ogma:
 
         self.h = neo.Hierarchy()
         if mode == "train":
-            ds = SeaDataset("../../data/ground_with_support/datasetcn.csv", hall=False)
+            ds = SeaDataset("../../data/ground_with_support/datasetcn.csv", hall=False, vel=True, eff=True)
             train_size = int(0.8 * len(ds))
             test_size = len(ds) - train_size
             train_dataset, test_dataset = torch.utils.data.random_split(ds, [train_size, test_size])
@@ -52,6 +53,8 @@ class Ogma:
             self.y_pred = 0.0
             self.best_val = -inf
 
+            wandb.init(project="deepsea", config={"epochs": self.epochs, "model": "Ogma"})
+
             self.train_loop()
         else:
             self.h.initFromFile(mode)
@@ -68,17 +71,23 @@ class Ogma:
                 csdr = self.se.encode(sigmoid(np.matrix(s[0]).T * 4.0))
                 self.h.step([ csdr, [ self.action ] ], True, self.reward)
                 self.action = self.h.getPredictionCIs(1)[0]
-                self.y_pred = self.action2motorgoal(s[0][0], self.action)
+                self.y_pred = self.action2motorgoal(s[1][0], self.action)
                 self.reward = -self.criterion(torch.tensor([self.y_pred]), s[1]).item()
                 rsum += self.reward
             print(rsum / len(self.train_loader))
+            wandb.log({"train_loss": -rsum / len(self.train_loader)})
+            wandb.log({"train_loss": -rsum / len(self.train_loader)})
+            wandb.log({"train_loss": -rsum / len(self.train_loader)})
             for i, s in enumerate(tqdm(self.test_loader)):
                 csdr = self.se.encode(sigmoid(np.matrix(s[0]).T * 4.0))
                 self.h.step([ csdr, [ self.action ] ], False)
                 self.action = self.h.getPredictionCIs(1)[0]
-                self.y_pred = self.action2motorgoal(s[0][0], self.action)
+                self.y_pred = self.action2motorgoal(s[1][0], self.action)
                 val_reward += -self.criterion(torch.tensor([self.y_pred]), s[1]).item()
             val_reward /= len(self.test_loader)
+            wandb.log({"val_loss": -val_reward})
+            wandb.log({"val_loss": -val_reward})
+            wandb.log({"val_loss": -val_reward})
             print("val reward: " + str(val_reward))
             print("Epoch: " + str(e))
             if val_reward > self.best_val:
