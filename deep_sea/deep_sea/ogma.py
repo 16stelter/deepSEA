@@ -61,7 +61,7 @@ class Ogma:
             self.h.initFromFile(mode)
 
     def action2motorgoal(self, position,  action):
-        return position + action * (0.2 / self.res) - 0.2
+        return position + action * (0.5 / self.res) - 0.5
 
     def train_loop(self):
         no_impr_count = 0

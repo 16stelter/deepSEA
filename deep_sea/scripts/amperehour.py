@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import math
 import time
 from time import time_ns
 
@@ -7,6 +8,7 @@ import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import JointState
 from geometry_msgs.msg import Twist
+from bitbots_msgs.msg import FloatStamped
 
 
 class EnergyNode(Node):
@@ -16,12 +18,14 @@ class EnergyNode(Node):
 
         self.joint_state_sub = self.create_subscription(JointState, "/joint_states", self.joint_state_cb, 1)
         self.walk_pub = self.create_publisher(Twist, "/cmd_vel", 1)
+        self.current_pub = self.create_publisher(FloatStamped, "/debug/l_current", 1)
 
         self.record = False
         self.first = True
         self.last_time = 0.0
 
         self.ah = 0.0
+        self.max_current = 0.0
 
         self.main()
 
@@ -36,8 +40,13 @@ class EnergyNode(Node):
                     if(msg.name[i] == "LKnee"):
                         current_time = time_ns()
                         # msg.effort * (torque to value) * (value to current) * duration * (nanosec to hour)
-                        self.ah += msg.effort[i] * 149.795386991 * 0.00269 * (current_time - self.last_time) * 2.777777777778 * (10 ** -13)
+                        self.ah += abs(msg.effort[i]) * 149.795386991 * 0.00269 * (current_time - self.last_time) * 2.777777777778 * (10 ** -13)
+                        if abs(msg.effort[i]) * 149.795386991 * 0.00269 > self.max_current:
+                            self.max_current = abs(msg.effort[i]) * 149.795386991 * 0.00269
                         self.last_time = current_time
+                        current_msg = FloatStamped()
+                        current_msg.value = msg.effort[i] * 149.795386991 * 0.00269
+                        self.current_pub.publish(current_msg)
 
 
     def main(self):
@@ -52,6 +61,7 @@ class EnergyNode(Node):
                 rclpy.spin_once(self)
         self.record = False
         self.get_logger().warning("" + str(self.ah)+ " Ah")
+        self.get_logger().warning("Peak current: "+ str(self.max_current) + " A")
         msg.linear.x = 0.0
         msg.angular.x = -1.0
         self.walk_pub.publish(msg)
