@@ -68,9 +68,9 @@ sns.set_context('paper')
 sns.set_palette('colorblind')
 
 fig, ax = plt.subplots()
-sns.scatterplot(x='beams', y='rf', data=df4, label="4 mm")
-sns.scatterplot(x='beams', y='rf', data=df6, label="6 mm")
-sns.scatterplot(x='beams', y='rf', data=df8, label="8 mm")
+sns.scatterplot(x='beams', y='rf', data=df4, label="4 mm", s=50)
+sns.scatterplot(x='beams', y='rf', data=df6, label="6 mm", s=50)
+sns.scatterplot(x='beams', y='rf', data=df8, label="8 mm", s=50)
 plt.legend()
 plt.show()
 

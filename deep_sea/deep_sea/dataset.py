@@ -5,7 +5,13 @@ from torch.utils.data import Dataset
 import numpy as np
 import ast
 
-
+'''
+Provides a torch dataset from a csv file.
+filename defines the path to the file.
+siam defines whether the dataset needs to return samples for a Siamese network.
+hist_len defines whether a history should be included in the samples and of what length.
+All other variables are toggles on whether to include certain fields in the samples.
+'''
 class SeaDataset(Dataset):
     def __init__(self, filename, siam=False, hall=True, vel=False, imu=False, fp=False, eff=False, forcecontrol=False, hist_len=0, use_poserr=False):
         self.data = pd.read_csv(filename)
@@ -19,6 +25,10 @@ class SeaDataset(Dataset):
         self.hist_len = hist_len
         self.siam = siam
 
+    '''
+    Returns a sample according to the torch dataset api.
+    idx defines the number of the sample.
+    '''
     def __getitem__(self, idx):
         # we can assume both joints are the same. thus we have twice the amount of samples.
         if idx % 2 == 0:  # left
@@ -41,6 +51,11 @@ class SeaDataset(Dataset):
             return torch.from_numpy(x).float(), torch.from_numpy(x1).float(), torch.from_numpy(y).float()
         return torch.from_numpy(x).float(), torch.from_numpy(y).float()
 
+    '''
+    Prepares the x component of the sample depending on the toggles.
+    idx defines the number of the sample.
+    offset defines the offset in the dataset file and thereby defines whether it is a left or right leg sample.
+    '''
     def get_x(self, idx, offset):
         x = np.asarray([self.data.iloc[idx, 2+offset]])  # target position
         for i in range(self.hist_len):
@@ -54,9 +69,9 @@ class SeaDataset(Dataset):
             x[0] = x[0] - x[2]
             x = np.delete(x, 2, axis=0)
         if self.vel:
-            x = np.append(x, self.data.iloc[idx, 3+offset])  # velocity
+            x = np.append(x, self.data.iloc[idx, 3+offset])  # motor velocity
             if self.hall:
-                x = np.append(x, self.data.iloc[idx, 4+offset])  # velocity
+                x = np.append(x, self.data.iloc[idx, 4+offset])  # hall velocity
         if self.eff:
             x = np.append(x, self.data.iloc[idx, 5+offset])
         if self.imu:

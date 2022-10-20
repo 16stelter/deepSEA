@@ -7,7 +7,9 @@ from rclpy.node import Node
 from rclpy.action import ActionClient
 from bitbots_msgs.action import Dynup
 
-
+'''
+Legacy code for automatically recording a dataset. This is no longer used!
+'''
 class Record:
     def __init__(self):
         rclpy.init(args=None)

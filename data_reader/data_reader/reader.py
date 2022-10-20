@@ -9,7 +9,9 @@ import pandas as pd
 import math
 import copy
 
-
+'''
+Class for generating datasets from the robots data.
+'''
 class Reader(Node):
     def __init__(self):
         super().__init__('reader')
@@ -40,6 +42,10 @@ class Reader(Node):
                                                self.pressure_right_sub], 10, (1/120))
         self.ts.registerCallback(self.sync_cb)
 
+    '''
+    Command is not part of the synchronized subscriber, as commands are not sent continuously.
+    Therefore, this method writes the latest command to a variable for later use.
+    '''
     def command_cb(self, msg):
         self.command = msg
 
@@ -98,7 +104,7 @@ def main(args=None):
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:
-        node.df.to_csv('dataset.csv')
+        node.df.to_csv('dataset.csv')  # write to file on shutdown
         print("done")
         pass
     node.destroy_node()

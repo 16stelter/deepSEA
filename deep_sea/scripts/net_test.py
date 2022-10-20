@@ -12,7 +12,9 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 from std_msgs.msg import Float64MultiArray
 
-
+'''
+Runs a network on a dataset and visualizes both predictions and ground truth.
+'''
 class NetTest(Node):
     def __init__(self, input_size):
         super().__init__("nettest")

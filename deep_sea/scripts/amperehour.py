@@ -10,7 +10,9 @@ from sensor_msgs.msg import JointState
 from geometry_msgs.msg import Twist
 from bitbots_msgs.msg import FloatStamped
 
-
+'''
+Moves the robot for a fixed amount of time and calculates the energy spent.
+'''
 class EnergyNode(Node):
     def __init__(self):
         rclpy.init(args=None)
@@ -29,7 +31,9 @@ class EnergyNode(Node):
 
         self.main()
 
-
+    '''
+    Every time we receive joint state data, calculate how much energy was spent since the last time.
+    '''
     def joint_state_cb(self, msg):
         if self.record:
             if self.first:
@@ -57,7 +61,7 @@ class EnergyNode(Node):
         self.walk_pub.publish(msg)
         start_time = time.time()
         self.record = True
-        while time.time() - start_time < 30:
+        while time.time() - start_time < 30: # walk for 30 seconds
                 rclpy.spin_once(self)
         self.record = False
         self.get_logger().warning("" + str(self.ah)+ " Ah")

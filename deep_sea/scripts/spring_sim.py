@@ -2,6 +2,9 @@ import math
 from scipy import constants
 import matplotlib.pyplot as plt
 
+'''
+Simulates a torsion spring and plots its torque and deflection after a given impulse.
+'''
 class Spring:
     def __init__(self, k, l=0.17, m=6.0):
         self.k = k

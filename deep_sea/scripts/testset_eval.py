@@ -15,7 +15,7 @@ from torch.utils.data import DataLoader
 from torchmetrics import R2Score, MeanSquaredLogError
 from torchmetrics.functional import mean_absolute_percentage_error
 from tqdm import tqdm
-from ogma import Ogma
+#from ogma import Ogma
 
 from models import simplemlp, siam
 from dataset import SeaDataset
@@ -24,18 +24,22 @@ import pandas as pd
 
 DEVICE = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
+'''
+Evaluates a network on a given dataset.
+'''
 class TestEval(Node):
     def __init__(self, input_size):
         super().__init__("test_eval")
-        self.model = Ogma("checkpoints/128hierarchy_0")
-        self.modelname = "mlp"
-        #checkpoint = torch.load("../../checkpoints/ground/all_SimpleMlp_5146.pt", map_location=torch.device('cpu'))
-        #self.model.eval()
-        #self.model.load_state_dict(checkpoint)
+        #self.model = Ogma("../../checkpoints/ground/ve/ve_hierarchy_301")
+        self.model = siam.SiamNN(3)
+        self.modelname = "siam"
+        checkpoint = torch.load("../../checkpoints/ground/ve/siamposve_SiamNN_8974.pt", map_location=torch.device('cpu'))
+        self.model.eval()
+        self.model.load_state_dict(checkpoint)
 
 
         self.criterion = torch.nn.MSELoss().to(DEVICE)
-        ds = SeaDataset("../../data/ground_with_support/ground_dtestcn.csv", siam=False, hall=False, vel=True, eff=True, imu=False, fp=False, hist_len=0)
+        ds = SeaDataset("../../data/ground_with_support/ground_dtestcnp.csv", siam=True, hall=False, vel=True, eff=True, imu=False, fp=False, hist_len=0)
         self.dl = DataLoader(ds, batch_size=1, shuffle=False)
 
 
@@ -86,7 +90,7 @@ class TestEval(Node):
                     self.pub_prediction.publish(msg)
                 y_loss = self.criterion(y_pred, y).item()
                 x1_loss = self.criterion(x1_pred, x1).item()
-                loss = y_loss + 0.1 * x1_loss
+                loss = y_loss
                 self.val_loss += loss
                 self.losses.append(loss)
                 # val_r2 += r2(pred, target)

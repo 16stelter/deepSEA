@@ -2,6 +2,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+'''
+Class defining a Siamese neural network.
+input_shape describes the length of the input vector.
+'''
 class SiamNN(nn.Module):
     def __init__(self, input_shape):
         super().__init__()
@@ -13,6 +17,9 @@ class SiamNN(nn.Module):
         self.pred_xt1 = nn.Linear(65, input_shape)
         self.pred_ut = nn.Linear(128, 1)
 
+    '''
+    Forward pass of the network for training, as described by torch.
+    '''
     def forward(self, xt, xt1, ut):
         latent_xt = self.sister_forward(xt)
         latent_xt1 = self.sister_forward(xt1)
@@ -22,15 +29,24 @@ class SiamNN(nn.Module):
 
         return pxt1, put
 
+    '''
+    Predicts the required action ut to transfer from state xt to state xt1.
+    '''
     def predict_ut(self, xt, xt1):
         latent_xt = self.sister_forward(xt)
         latent_xt1 = self.sister_forward(xt1)
         return self.pred_ut(torch.cat((latent_xt, latent_xt1), dim=0))
 
+    '''
+    Predicts state xt1 given a starting state xt and an action ut.
+    '''
     def predict_xt1(self, xt, ut):
         latent_xt = self.sister_forward(xt)
         return self.pred_xt1(torch.cat((latent_xt, ut), dim=0))
 
+    '''
+    Forward pass through the twinned layers of the network.
+    '''
     def sister_forward(self, x):
         x = self.s_dense1(x)
         x = F.relu(x)

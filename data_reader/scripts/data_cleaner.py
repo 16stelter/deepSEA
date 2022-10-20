@@ -2,6 +2,9 @@ import pandas as pd
 import ast
 import math
 
+'''
+Converts quaternions to euler angles.
+'''
 def quaternion_to_euler_angle(x, y, z, w):
     ysqr = y * y
 

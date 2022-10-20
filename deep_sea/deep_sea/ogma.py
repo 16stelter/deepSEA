@@ -14,13 +14,22 @@ import wandb
 def sigmoid(x):
     return 1.0 / (1.0 + np.exp(-x))
 
+'''
+Defines a Ogma model and its training.
+Requires the  Scalar Pre-encoder from the PyAOgmaNeo repository, which could not be included here
+due to copyright reasons.
+'''
 class Ogma:
+    '''
+    Initializes the model.
+    If mode == train, starts training, else loads checkpoint from mode variable.
+    '''
     def __init__(self, mode):
         self.res = 129 #resolution
         self.se = ScalarEncoder(3, 9, self.res)
         neo.setNumThreads(8)
 
-        self.input_size = 1
+        self.input_size = 3
         self.column_size = 16
         self.epochs = 1000
 
@@ -60,9 +69,16 @@ class Ogma:
         else:
             self.h.initFromFile(mode)
 
+    '''
+    Transforms the output of the network into a motor goal.
+    As the network output is very low resolution, this does not cover the entire range of the servo.
+    '''
     def action2motorgoal(self, position,  action):
         return position + action * (0.5 / self.res) - 0.5
 
+    '''
+    Trains the network.
+    '''
     def train_loop(self):
         no_impr_count = 0
         for e in range(self.epochs):
@@ -76,7 +92,7 @@ class Ogma:
                 self.reward = -self.criterion(torch.tensor([self.y_pred]), s[1]).item()
                 rsum += self.reward
             print(rsum / len(self.train_loader))
-            wandb.log({"train_loss": -rsum / len(self.train_loader)})
+            wandb.log({"train_loss": -rsum / len(self.train_loader)}) # log everything thrice to match steps to other trainings. This is very hacky.
             wandb.log({"train_loss": -rsum / len(self.train_loader)})
             wandb.log({"train_loss": -rsum / len(self.train_loader)})
             for i, s in enumerate(tqdm(self.test_loader)):
@@ -100,6 +116,9 @@ class Ogma:
             if no_impr_count > 100:
                 return
         
+    '''
+    Predicts action from a sample.
+    '''    
     def forward(self, sample):
         csdr = self.se.encode(sigmoid(np.matrix(sample).T * 4.0))
         self.h.step([csdr, [self.action]], False)
@@ -107,37 +126,6 @@ class Ogma:
         self.y_pred = self.action2motorgoal(sample[0][0], self.action)
         return torch.tensor([self.y_pred]).unsqueeze(0)
 
-
-'''
-Pre-encoder from the PyAOgmaNeo repository.
-
-Copyright(c) 2020-2022 Ogma Intelligent Systems Corp. All rights reserved.
-'''
-class ScalarEncoder:
-    def __init__(self, num_scalars, num_columns, cells_per_column, lower_bound=0.0, upper_bound=1.0):
-        self.num_scalars = num_scalars
-        self.cells_per_column = cells_per_column
-
-        self.protos = []
-
-        for _ in range(num_columns):
-            self.protos.append(np.random.rand(cells_per_column, num_scalars) * (upper_bound - lower_bound) + lower_bound)
-
-    def encode(self, scalars):
-        csdr = []
-
-        for i in range(len(self.protos)):
-            acts = -np.sum(np.square(np.repeat(scalars.T, self.cells_per_column, axis=0) - self.protos[i]), axis=1)
-
-            csdr.append(np.argmax(acts).item())
-
-        return csdr
-
-    def decode(self, csdr):
-        scalars = np.zeros(self.num_scalars)
-
-        for i in range(len(self.protos)):
-            scalars += self.protos[csdr[i]]
 
 if __name__ == "__main__":
     ogma = Ogma("train")

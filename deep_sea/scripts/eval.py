@@ -10,7 +10,9 @@ from rclpy.action import ActionClient
 from bitbots_msgs.action import Dynup
 import pandas as pd
 
-
+'''
+Evaluation script to automatically perform a fixed set of motions and record the errors.
+'''
 class Evaluator(Node):
     def __init__(self):
         rclpy.init(args=None)
@@ -33,13 +35,16 @@ class Evaluator(Node):
         self.l_err_count_pos = self.r_err_count_pos = 0
         self.l_err_count_neg = self.r_err_count_neg = 0
 
-        self.recording = False
+        self.recording = False # toggles whether data should be stored right now
 
         self.walk_pub = self.create_publisher(Twist, "/cmd_vel", 1)
         self.dynup_action_client = ActionClient(self, Dynup, 'dynup')
 
         self.main()
 
+    '''
+    Records the errors of the left leg.
+    '''
     def l_err_cb(self, msg):
         if self.recording:
             self.l_err_sum += abs(msg.value)
@@ -56,6 +61,9 @@ class Evaluator(Node):
 
             self.l_err_count += 1
 
+    '''
+    Records the errors of the right leg.
+    '''
     def r_err_cb(self, msg):
         if self.recording:
             self.r_err_sum += abs(msg.value)
@@ -71,6 +79,9 @@ class Evaluator(Node):
                 self.r_err_count_neg += 1
             self.r_err_count += 1
 
+    '''
+    Executes a row of actions in order. Walks in different directions and executes standup.
+    '''
     def main(self):
         self.get_logger().warning("Place the robot on the ground, hold it secure. Press any key to begin.")
         input()
@@ -137,6 +148,9 @@ class Evaluator(Node):
         self.get_logger().warning("Goodbye!")
         self.df.to_csv("eval.csv")
 
+    '''
+    Defines how data should be logged.
+    '''
     def logrow(self, direction, speed=0.0):
         if self.l_err_count_neg == 0:  # avoid divide by zero. I'm sorry about this mess, I'm tired.
             self.l_err_count_neg = 1

@@ -1,7 +1,10 @@
 import torch.nn as nn
 import torch.nn.functional as F
 
-
+'''
+Class defining a MLP network.
+input_shape describes the length of the input vector.
+'''
 class SimpleMlp(nn.Module):
     def __init__(self, input_shape):
         super().__init__()

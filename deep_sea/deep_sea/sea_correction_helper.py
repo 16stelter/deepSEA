@@ -9,7 +9,11 @@ from deep_sea.ogma import Ogma
 from sensor_msgs.msg import Imu, JointState
 from bitbots_msgs.msg import FootPressure, FloatStamped, JointCommand
 
-
+'''
+Node for intercepting motor commands and applying corrections to them.
+model_type defines, which network should be used.
+input_size defines the size of the input vector.
+'''
 class DeepSea(Node):
     def __init__(self, model_type="mlp", input_size=21):
         super().__init__("deepsea")
@@ -58,7 +62,9 @@ class DeepSea(Node):
         self.debug_motor_torque_pub_r = self.create_publisher(FloatStamped, "/debug/r_motor_torque", 1)
         self.debug_motor_torque_pub_l = self.create_publisher(FloatStamped, "/debug/l_motor_torque", 1)
 
-
+    '''
+    Latches the latest motor command.
+    '''
     def command_cb(self, msg):
         self.latched_command = msg
         for i in range(len(msg.joint_names)):
@@ -71,6 +77,9 @@ class DeepSea(Node):
                 debug_msg.value = msg.position[i]
                 self.debug_command_pub_r.publish(debug_msg)
 
+    '''
+    Adds correction to the SEA error. Also calculates and publishes the current torque in the knee actuators.
+    '''
     def joint_state_cb(self, msg):
         out = JointCommand()
         for i in range(len(msg.name)):
@@ -135,6 +144,9 @@ class DeepSea(Node):
 
                 self.pub.publish(out)
 
+    '''
+    Collects data from the left Hall sensor.
+    '''
     def l_hall_cb(self, msg):
         self.left_hall_pos = msg.value
         self.left_hall_hist.append(self.left_hall_pos / math.pi)
@@ -142,6 +154,9 @@ class DeepSea(Node):
         self.left_hall_vel = msg.value - self.l_previous
         self.l_previous = msg.value
 
+    '''
+    Collects data from the right Hall sensor.
+    '''
     def r_hall_cb(self, msg):
         self.right_hall_pos = msg.value
         self.right_hall_hist.append(self.right_hall_pos / math.pi)
@@ -149,6 +164,9 @@ class DeepSea(Node):
         self.right_hall_vel = msg.value - self.r_previous
         self.r_previous = msg.value
 
+    '''
+    Collects data from the IMU.
+    '''
     def imu_cb(self, msg):
         imu = [msg.orientation.x, msg.orientation.y, msg.orientation.z, msg.orientation.w,
                msg.angular_velocity.x, msg.angular_velocity.y, msg.angular_velocity.z,
@@ -156,13 +174,21 @@ class DeepSea(Node):
         self.imu = list(quaternion_to_euler_angle(imu[0], imu[1], imu[2], imu[3]))
         self.imu.extend(imu[4:])
 
+    '''
+    Collects data from the left foot pressure sensors.
+    '''
     def l_pressure_cb(self, msg):
         self.left_foot = [msg.left_front, msg.right_front, msg.right_back]
 
+    '''
+    Collects data from the right foot pressure sensors.
+    '''
     def r_pressure_cb(self, msg):
         self.right_foot = [msg.left_back, msg.left_front, msg.right_front]
 
-
+'''
+Helper function to convert quaternions to euler angles.
+'''
 def quaternion_to_euler_angle(x, y, z, w):
     ysqr = y * y
 
